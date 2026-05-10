@@ -10,8 +10,8 @@ import { useAuth } from "../context/AuthContext.jsx"
 import { db } from "../firebase/config.js"
 import { applyCorrections, saveCorrection } from "../utils/correctionMemory.js"
 import { fuzzyMatchSingle } from "../utils/fuzzyMatcher.js"
-import { convertToStructured } from "../utils/geminiHelper.js"
-import { convertBanglaToEnglish, parseChat, parseProductQuantityPairs } from "../utils/parser.js"
+import { convertToStructuredText } from "../utils/geminiHelper.js"
+import { parseChat, parseProductQuantityPairs } from "../utils/parser.js"
 import { printInvoiceElement } from "../utils/printInvoice.js"
 import { detectZone } from "../utils/zoneDetector.js"
 
@@ -195,28 +195,23 @@ function NewOrder() {
           return
         }
 
-        const geminiResult = await convertToStructured(chatText, loadedProducts, loadedZones)
-        if (!geminiResult) {
-          toast.error("AI could not read this chat. Try switching to Structured mode or rephrase the chat.")
+        const structuredText = await convertToStructuredText(chatText, loadedProducts, loadedZones)
+        if (!structuredText) {
+          toast.error("AI could not format this chat. Try Structured mode or paste a clearer message.")
           return
         }
 
         setStep(1)
-        parsedResult = {
-          customerName: geminiResult.customerName || "",
-          phone: convertBanglaToEnglish(geminiResult.phone || ""),
-          address: geminiResult.address || "",
-          zone: geminiResult.zone || null,
-          products: [],
-          paymentMethod: geminiResult.paymentMethod || "COD",
-          deliveryPaymentMethod: geminiResult.deliveryPaymentMethod || null,
-          transactionId: geminiResult.transactionId || "",
-          notes: geminiResult.notes || "",
-          parsedBy: "gemini",
-        }
+        parsedResult = parseChat(structuredText, loadedProducts, loadedZones)
+        parsedResult.rawText = chatText
+        parsedResult.structuredText = structuredText
+        parsedResult.parsedBy = "gemini"
 
         setStep(2)
-        parsedResult.products = (geminiResult.products || []).map((item) => buildProductRow(item.productName, item.quantity || 1, loadedProducts))
+        const productPairs = parseProductQuantityPairs(structuredText)
+        if (productPairs.length > 0) {
+          parsedResult.products = productPairs.map((pair) => buildProductRow(pair.productName, pair.quantity, loadedProducts))
+        }
       }
 
       setStep(chatType === "structured" ? 2 : 3)

@@ -120,6 +120,127 @@ Use null when a field is missing.
   }
 }
 
+export async function convertToStructuredText(chatText, productCatalog = [], zones = []) {
+  const model = getModel()
+  if (!model) return null
+
+  const productList = productCatalog
+    .map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""}${p.tags?.length ? " (tags: " + p.tags.join(", ") + ")" : ""}`)
+    .join("\n")
+  const zoneList = zones.map((z) => `${z.area}${z.banglaArea ? "/" + z.banglaArea : ""}`).join(", ")
+
+  const prompt = `
+You are SellerBot's AI pre-formatter for Bangladeshi Facebook/WhatsApp sellers.
+
+YOUR ONLY JOB:
+Convert the customer's messy UNSTRUCTURED chat into the exact STRUCTURED TEXT format below.
+Do not return JSON. Do not explain. Return only structured text with labels.
+
+SELLER PRODUCT CATALOG:
+${productList || "No product catalog provided. Use product names from chat."}
+
+DELIVERY ZONES:
+${zoneList || "No delivery zones provided."}
+
+TARGET STRUCTURED FORMAT:
+Name: customer name or blank
+Mobile: 01XXXXXXXXX or blank
+Address: full address exactly as customer said it or closest clean address
+
+Product: product name
+Quantity: number
+
+Product: second product name
+Quantity: number
+
+Payment: COD/bKash/Nagad/Rocket/Bank/Other
+Note: optional instruction or blank
+
+UNDERSTAND BANGLA, ENGLISH, AND BANGLISH:
+- "আপু আমার নাম সুমাইয়া" => Name: সুমাইয়া
+- "ভাই আমার নাম করিম" => Name: করিম
+- "ami karim" / "amar nam karim" => Name: karim
+- Never include আপু, ভাই, apu, vai, bhai, apa in the name.
+- "ঢাকা মিরপুর ১০ এ থাকি" => Address: ঢাকা মিরপুর ১০
+- "sylhet e thaki" => Address: sylhet
+- "mirpur 10 e achi" => Address: mirpur 10
+- "একটা শার্ট আর দুইটা প্যান্ট নিবো" => Product: শার্ট Quantity: 1 and Product: প্যান্ট Quantity: 2
+- "2ta shirt ar 1ta pant lagbe" => Product: shirt Quantity: 2 and Product: pant Quantity: 1
+- একটা/একটি/ekta=1, দুইটা/দুটো/duita=2, তিনটা/tinta=3, চারটা/charta=4, পাঁচটা/pachta=5.
+- "নিবো", "নেব", "চাই", "lagbe", "nibo", "need", "want" indicate products.
+- "বিকাশে পেমেন্ট করবো" or "bkash/bikash e dibo" => Payment: bKash
+- "নগদে দিবো" or "nagad e dibo" => Payment: Nagad
+- "cash" or "cod" => Payment: COD
+- Phone may use Bangla digits. Convert phone to English digits.
+- Match product words to the closest seller catalog item when possible, but keep the extracted product name if unsure.
+- Quantity must be attached to the correct product.
+- If payment is not stated, use Payment: COD.
+
+EXAMPLE 1 INPUT:
+আপু আমার নাম সুমাইয়া
+ঢাকা মিরপুর ১০ এ থাকি
+একটা শার্ট আর দুইটা প্যান্ট নিবো
+বিকাশে পেমেন্ট করবো
+০১৭১২৩৪৫৬৭৮
+
+EXAMPLE 1 OUTPUT:
+Name: সুমাইয়া
+Mobile: 01712345678
+Address: ঢাকা মিরপুর ১০
+
+Product: শার্ট
+Quantity: 1
+
+Product: প্যান্ট
+Quantity: 2
+
+Payment: bKash
+Note:
+
+EXAMPLE 2 INPUT:
+vai asalamu alaikum
+ami karim, sylhet e thaki
+2ta shirt ar 1ta pant lagbe
+nagad e dibo
+01812345678
+
+EXAMPLE 2 OUTPUT:
+Name: karim
+Mobile: 01812345678
+Address: sylhet
+
+Product: shirt
+Quantity: 2
+
+Product: pant
+Quantity: 1
+
+Payment: Nagad
+Note:
+
+CUSTOMER CHAT:
+"""
+${chatText}
+"""
+
+Return only the structured text. No markdown. No JSON.
+`
+
+  try {
+    const result = await model.generateContent(prompt)
+    return cleanStructuredText(result.response.text())
+  } catch (error) {
+    console.error("Gemini structured text conversion failed:", error)
+    return null
+  }
+}
+
+function cleanStructuredText(text = "") {
+  return String(text)
+    .replace(/```(?:text)?/gi, "")
+    .replace(/```/g, "")
+    .trim()
+}
 export async function extractWithGemini(chatText, missingFields, productCatalog) {
   const model = getModel()
   if (!model) return {}
