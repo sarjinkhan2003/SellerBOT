@@ -1,6 +1,12 @@
 ﻿import { matchProducts } from "./fuzzyMatcher.js"
 import { detectZone } from "./zoneDetector.js"
 
+function convertBanglaToEnglish(str = "") {
+  const banglaDigits = "০১২৩৪৫৬৭৮৯"
+  const englishDigits = "0123456789"
+  return str.replace(/[০-৯]/g, (d) => englishDigits[banglaDigits.indexOf(d)])
+}
+
 const phoneRegex = /(?:\+?88)?01[3-9]\d{8}/g
 
 const quantityMap = {
@@ -60,115 +66,123 @@ const paymentKeywords = {
   cellfin: "CellFin",
 }
 
-const addressTriggers = [
-  "address:",
-  "Address:",
-  "ADDRESS:",
-  "ঠিকানা:",
-  "thikana:",
-  "Thikana:",
-  "deliver to:",
-  "delivery address:",
-  "pathaben:",
-  "পাঠাবেন:",
-  "deliver korben:",
-]
+const nameTriggers = ["নামঃ", "নাম:", "নাম :", "name:", "Name:", "customer:", "nam:", "ami ", "আমি ", "buyer:"]
+const addressTriggers = ["ঠিকানাঃ", "ঠিকানা:", "ঠিকানা :", "address:", "Address:", "ADDRESS:", "deliver to:", "delivery address:", "thikana:", "Thikana:", "pathaben:", "পাঠাবেন:", "deliver korben:"]
+const phoneTriggers = ["মোবাইলঃ", "মোবাইল:", "mobile:", "phone:", "Mobile:", "নম্বরঃ", "নাম্বারঃ", "number:", "contact:"]
+const itemTriggers = ["আইটেমঃ", "আইটেম:", "item:", "items:", "পণ্যঃ", "product:", "order:", "lagbe:", "লাগবেঃ", "লাগবে:"]
+const noteTriggers = ["note:", "Note:", "বিশেষ:", "special:", "kheal rakben:", "খেয়াল রাখবেন:", "important:", "please note:", "instruction:"]
 
-const addressWords = [
-  "road",
-  "lane",
-  "avenue",
-  "street",
-  "village",
-  "gram",
-  "para",
-  "ward",
-  "union",
-  "upazila",
-  "thana",
-  "district",
-  "division",
-  "house",
-  "flat",
-  "floor",
-  "apartment",
-  "building",
-  "tower",
-  "goli",
-  "bari",
-  "mahal",
-  "nagar",
-  "pur",
-  "bazar",
-  "hat",
-  "north",
-  "south",
-  "east",
-  "west",
-  "uttar",
-  "dakkhin",
-  "purbo",
-  "paschim",
-]
-
-const nameTriggers = ["name:", "Name:", "নাম:", "nam:", "ami ", "আমি ", "customer:", "buyer:"]
-const noteTriggers = [
-  "note:",
-  "Note:",
-  "বিশেষ:",
-  "special:",
-  "kheal rakben:",
-  "খেয়াল রাখবেন:",
-  "important:",
-  "please note:",
-  "instruction:",
-]
+const addressWords = ["road", "lane", "avenue", "street", "village", "gram", "para", "ward", "union", "upazila", "thana", "district", "division", "house", "flat", "floor", "apartment", "building", "tower", "goli", "bari", "mahal", "nagar", "pur", "bazar", "hat", "north", "south", "east", "west", "uttar", "dakkhin", "purbo", "paschim"]
 
 export function parseChat(chatText = "", products = [], zones = []) {
-  const matchedProducts = matchProducts(chatText, products)
-  const address = extractAddress(chatText)
+  const convertedText = convertBanglaToEnglish(chatText)
+  const lineParsed = parseLines(chatText, convertedText, products)
+  const fullTextProducts = matchProducts(convertedText, products)
+  const productsMatched = lineParsed.products.length ? lineParsed.products : fullTextProducts
+  const address = lineParsed.address || extractAddress(chatText)
   const zone = address ? detectZone(address, zones) : null
+  const payment = extractPayment(convertedText)
   const parsedResult = {
     rawText: chatText,
-    customerName: extractName(chatText),
-    phone: extractPhone(chatText),
+    customerName: lineParsed.customerName || extractName(chatText),
+    phone: lineParsed.phone || extractPhone(convertedText),
     address,
-    products: matchedProducts,
-    paymentMethod: extractPayment(chatText).paymentMethod,
-    transactionId: extractPayment(chatText).transactionId,
+    products: productsMatched,
+    paymentMethod: payment.paymentMethod,
+    transactionId: payment.transactionId,
     notes: extractNotes(chatText),
     zone,
     deliveryCharge: zone?.charge || 0,
     parsedBy: "regex",
+    lineMatches: lineParsed.lineMatches,
   }
 
   parsedResult.confidence = calculateConfidence(parsedResult)
   return parsedResult
 }
 
+function parseLines(originalText, convertedText, products) {
+  const originalLines = originalText.split(/\r?\n/)
+  const convertedLines = convertedText.split(/\r?\n/)
+  const result = {
+    customerName: null,
+    phone: null,
+    address: null,
+    products: [],
+    lineMatches: { name: false, phone: false, address: false, products: false },
+  }
+
+  originalLines.forEach((rawLine, index) => {
+    const originalLine = rawLine.trim()
+    const convertedLine = (convertedLines[index] || originalLine).trim()
+    if (!originalLine) return
+
+    const nameValue = extractAfterLineTrigger(originalLine, nameTriggers)
+    if (nameValue && !result.customerName) {
+      result.customerName = nameValue
+      result.lineMatches.name = true
+    }
+
+    const addressValue = extractAfterLineTrigger(originalLine, addressTriggers)
+    if (addressValue && !result.address) {
+      result.address = addressValue
+      result.lineMatches.address = true
+    }
+
+    const phoneValue = extractAfterLineTrigger(convertedLine, phoneTriggers)
+    if (phoneValue && !result.phone) {
+      result.phone = extractPhone(phoneValue)
+      result.lineMatches.phone = Boolean(result.phone)
+    }
+
+    const itemValue = extractAfterLineTrigger(convertedLine, itemTriggers)
+    if (itemValue) {
+      const matches = matchProducts(itemValue, products).map((product) => ({
+        ...product,
+        quantity: extractQuantity(itemValue),
+        totalPrice: product.unitPrice * extractQuantity(itemValue),
+      }))
+      if (matches.length) {
+        result.products.push(...matches)
+        result.lineMatches.products = true
+      }
+    }
+  })
+
+  return result
+}
+
+function extractAfterLineTrigger(line, triggers) {
+  const lower = line.toLowerCase()
+  const trigger = triggers.find((item) => lower.startsWith(item.toLowerCase()))
+  if (!trigger) return null
+  return line.slice(trigger.length).trim() || null
+}
+
 export function calculateConfidence(parsedResult) {
   let score = 0
+  if (parsedResult.customerName) score += 0.25
   if (parsedResult.phone) score += 0.25
   if (parsedResult.address) score += 0.25
-  if (parsedResult.products?.length > 0) score += 0.3
-  if (parsedResult.customerName) score += 0.2
+  if (parsedResult.products?.length > 0) score += 0.25
   return Math.min(1, Number(score.toFixed(2)))
 }
 
 export function extractPhone(text = "") {
-  const match = text.match(phoneRegex)?.[0]
+  const converted = convertBanglaToEnglish(text)
+  const match = converted.match(phoneRegex)?.[0]
   if (!match) return null
   const digits = match.replace(/\D/g, "")
   return digits.startsWith("88") && digits.length === 13 ? digits.slice(2) : digits.slice(-11)
 }
 
 export function extractQuantity(text = "") {
-  const lower = text.toLowerCase()
+  const lower = convertBanglaToEnglish(text).toLowerCase()
   for (const [word, quantity] of Object.entries(quantityMap)) {
-    if (lower.includes(word.toLowerCase())) return quantity
+    if (lower.includes(convertBanglaToEnglish(word).toLowerCase())) return quantity
   }
 
-  const unitMatch = lower.match(/(\d+)\s*(ta|টা|pcs|piece|pieces|nos|number|set|packet|pack|box)/i)
+  const unitMatch = lower.match(/(\d+)\s*(ta|টা|pcs|piece|pieces|পিছ|পিস|nos|number|set|packet|pack|box)/i)
   if (unitMatch) return Number(unitMatch[1])
 
   const xPrefix = lower.match(/x\s*(\d+)/i)
@@ -181,7 +195,8 @@ export function extractQuantity(text = "") {
 }
 
 export function extractPayment(text = "") {
-  const lower = text.toLowerCase()
+  const converted = convertBanglaToEnglish(text)
+  const lower = converted.toLowerCase()
   let paymentMethod = "COD"
   let keywordIndex = -1
 
@@ -196,7 +211,7 @@ export function extractPayment(text = "") {
 
   let transactionId = null
   if (keywordIndex >= 0) {
-    const windowText = text.slice(Math.max(0, keywordIndex - 50), keywordIndex + 50).toUpperCase()
+    const windowText = converted.slice(Math.max(0, keywordIndex - 50), keywordIndex + 50).toUpperCase()
     transactionId = windowText.match(/[A-Z0-9]{8,10}/g)?.[0] || null
   }
 
@@ -205,7 +220,7 @@ export function extractPayment(text = "") {
 
 export function extractAddress(text = "") {
   for (const trigger of addressTriggers) {
-    const index = text.indexOf(trigger)
+    const index = text.toLowerCase().indexOf(trigger.toLowerCase())
     if (index >= 0) {
       const value = text.slice(index + trigger.length).trim()
       return value || null
@@ -224,7 +239,7 @@ export function extractAddress(text = "") {
 
 export function extractName(text = "") {
   for (const trigger of nameTriggers) {
-    const index = text.indexOf(trigger)
+    const index = text.toLowerCase().indexOf(trigger.toLowerCase())
     if (index >= 0) {
       const after = text.slice(index + trigger.length).split(/\r?\n/)[0].trim()
       const words = after.split(/\s+/).slice(0, 4).join(" ")
@@ -233,7 +248,7 @@ export function extractName(text = "") {
   }
 
   const firstLine = text.split(/\r?\n/).find((line) => line.trim())?.trim()
-  if (firstLine && !/\d/.test(firstLine) && /^[\p{L}\s.'-]+$/u.test(firstLine) && firstLine.split(/\s+/).length < 5) {
+  if (firstLine && !/[\d০-৯]/.test(firstLine) && /^[\p{L}\s.'-]+$/u.test(firstLine) && firstLine.split(/\s+/).length < 5) {
     return firstLine
   }
 
@@ -242,7 +257,7 @@ export function extractName(text = "") {
 
 export function extractNotes(text = "") {
   for (const trigger of noteTriggers) {
-    const index = text.indexOf(trigger)
+    const index = text.toLowerCase().indexOf(trigger.toLowerCase())
     if (index >= 0) {
       const value = text.slice(index + trigger.length).trim()
       return value || null
