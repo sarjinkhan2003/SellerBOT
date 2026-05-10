@@ -86,13 +86,15 @@ Return ONLY valid JSON, no explanation:
   "notes": "string or null"
 }
 `
+  const fallback = convertBanglishFallback(chatText, productCatalog, zones)
+
   try {
     const result = await model.generateContent(prompt)
     const parsed = parseJsonResponse(result.response.text())
-    return hasUsefulExtraction(parsed) ? parsed : convertBanglishFallback(chatText, productCatalog, zones)
+    return hasUsefulExtraction(parsed) ? mergeWithFallback(parsed, fallback) : fallback
   } catch (err) {
     console.error("Gemini pre-processor failed:", err)
-    return convertBanglishFallback(chatText, productCatalog, zones)
+    return fallback
   }
 }
 
@@ -110,6 +112,58 @@ export async function extractWithGemini(chatText, missingFields, productCatalog)
   }
 }
 
+function mergeWithFallback(parsed, fallback) {
+  if (!fallback) return sanitizeStructuredResult(parsed)
+
+  const merged = {
+    ...parsed,
+    customerName: isBadName(parsed.customerName) && fallback.customerName ? fallback.customerName : parsed.customerName || fallback.customerName || null,
+    phone: parsed.phone || fallback.phone || null,
+    address: parsed.address || fallback.address || null,
+    zone: parsed.zone || fallback.zone || null,
+    products: fallback.products?.length ? fallback.products : parsed.products || [],
+    paymentMethod: fallback.paymentMethod || parsed.paymentMethod || "COD",
+    deliveryPaymentMethod: parsed.deliveryPaymentMethod || fallback.deliveryPaymentMethod || null,
+    transactionId: parsed.transactionId || fallback.transactionId || null,
+    notes: parsed.notes || fallback.notes || null,
+  }
+
+  return sanitizeStructuredResult(merged)
+}
+
+function sanitizeStructuredResult(result) {
+  if (!result) return null
+  const phone = normalizePhone(result.phone)
+  const transactionId = normalizeTransactionId(result.transactionId, phone)
+  return {
+    ...result,
+    phone,
+    transactionId,
+    products: Array.isArray(result.products) ? result.products.filter((item) => item?.productName) : [],
+  }
+}
+
+function normalizePhone(phone) {
+  if (!phone) return null
+  const digits = convertBanglaDigits(String(phone)).replace(/\D/g, "")
+  if (!digits) return null
+  return digits.startsWith("88") && digits.length === 13 ? digits.slice(2) : digits.slice(-11)
+}
+
+function normalizeTransactionId(transactionId, phone) {
+  if (!transactionId) return null
+  const cleaned = String(transactionId).trim()
+  const digits = cleaned.replace(/\D/g, "")
+  if (phone && digits && phone.includes(digits)) return null
+  if (/^01[3-9]\d{8}$/.test(digits)) return null
+  return cleaned
+}
+
+function isBadName(name) {
+  if (!name) return true
+  const cleaned = String(name).trim()
+  return cleaned.length < 3 || /^(ss|vai|bhai|apu|apa)$/i.test(cleaned)
+}
 function parseJsonResponse(text = "") {
   const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim()
   try {
@@ -241,5 +295,8 @@ function matchZoneName(address, zones) {
   const lower = address.toLowerCase()
   return zones.find((zone) => [zone.area, zone.banglaArea, ...(zone.keywords || [])].filter(Boolean).some((keyword) => lower.includes(String(keyword).toLowerCase())))?.area || null
 }
+
+
+
 
 

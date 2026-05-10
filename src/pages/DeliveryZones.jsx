@@ -87,14 +87,14 @@ function DeliveryZones() {
 
   const handleDistrictSelect = (district) => {
     setSelectedDistrict(district)
-    setForm((current) => ({ ...current, keywords: current.isOutsideBaseCity ? outsideKeywords.join(", ") : district.keywords.join(", ") }))
+    setForm((current) => ({ ...current, keywords: current.isOutsideBaseCity ? buildOutsideKeywords(baseDistrict || district).join(", ") : district.keywords.join(", ") }))
   }
 
   const handleFormChange = (updater) => {
     setForm((current) => {
       const next = typeof updater === "function" ? updater(current) : updater
       if (next.isOutsideBaseCity && !current.isOutsideBaseCity) {
-        return { ...next, isHomeCity: false, keywords: outsideKeywords.join(", "), charge: next.charge || "150" }
+        return { ...next, isHomeCity: false, keywords: buildOutsideKeywords(baseDistrict || selectedDistrict).join(", "), charge: next.charge || "150" }
       }
       if (next.isHomeCity && !current.isHomeCity) {
         return { ...next, isOutsideBaseCity: false, charge: next.charge || "60" }
@@ -212,7 +212,7 @@ function DeliveryZones() {
         banglaArea: `${homeDistrict.bangla} এর বাইরে`,
         division: homeDistrict.division,
         charge: 150,
-        keywords: outsideKeywords,
+        keywords: buildOutsideKeywords(homeDistrict),
         isHomeCity: false,
         isOutsideBaseCity: true,
         createdAt: serverTimestamp(),
@@ -266,8 +266,17 @@ function ZoneModal({ baseDistrict, form, saving, selectedDistrict, onClose, onDi
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6"><section className="max-h-full w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl"><div className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h3 className="text-xl font-semibold text-slate-950">Delivery Zone</h3><button className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" type="button" onClick={onClose} disabled={saving} aria-label="Close zone modal"><X className="h-5 w-5" /></button></div><form className="space-y-5 px-5 py-5" onSubmit={onSave}>{!form.isOutsideBaseCity && <DistrictSelect label="Area Name" selectedDistrict={selectedDistrict} onSelect={onDistrictSelect} disabled={saving} />}{form.isOutsideBaseCity && <p className="rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-800">Outside zone will be saved as Outside {baseDistrict?.name || selectedDistrict?.name || "Base City"}</p>}<label className="block"><span className="text-sm font-medium text-slate-700">Delivery Charge (৳)</span><input className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" type="number" min="0" value={form.charge} onChange={(event) => onFormChange((current) => ({ ...current, charge: event.target.value }))} disabled={saving} /></label><label className="block"><span className="text-sm font-medium text-slate-700">Keywords</span><input className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" value={form.keywords} onChange={(event) => onFormChange((current) => ({ ...current, keywords: event.target.value }))} disabled={saving} /></label><label className="flex items-center gap-3 rounded-md bg-slate-50 px-3 py-3 text-sm font-medium text-slate-700"><input className="h-4 w-4 accent-[#1D9E75]" type="checkbox" checked={form.isHomeCity} onChange={(event) => onFormChange((current) => ({ ...current, isHomeCity: event.target.checked }))} disabled={saving} />Is this your Home City?</label><label className="flex items-center gap-3 rounded-md bg-orange-50 px-3 py-3 text-sm font-medium text-orange-900"><input className="h-4 w-4 accent-[#f39c12]" type="checkbox" checked={form.isOutsideBaseCity} onChange={(event) => onFormChange((current) => ({ ...current, isOutsideBaseCity: event.target.checked }))} disabled={saving} />Is this Outside {baseDistrict?.name || "BaseCity"} catch-all?</label><div className="flex justify-end gap-3 border-t border-slate-200 pt-5"><button className="h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button" onClick={onClose} disabled={saving}>Cancel</button><button className="h-11 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765] disabled:opacity-70" type="submit" disabled={saving}>{saving ? "Saving..." : "Save Zone"}</button></div></form></section></div>
 }
 
+function buildOutsideKeywords(baseDistrict) {
+  const baseName = baseDistrict?.name
+  const remainingDistrictKeywords = districts
+    .filter((district) => district.name !== baseName)
+    .flatMap((district) => [district.name, district.bangla, ...(district.keywords || [])])
+  return Array.from(new Set([...outsideKeywords, ...remainingDistrictKeywords].filter(Boolean)))
+}
+
 function splitCommaList(value) {
   return value.split(",").map((item) => item.trim()).filter(Boolean)
 }
 
 export default DeliveryZones
+
