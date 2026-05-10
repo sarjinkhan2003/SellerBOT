@@ -10,26 +10,28 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
+    "compromise": "^14.15.0",
+    "firebase": "^12.13.0",
+    "fuse.js": "^7.3.0",
+    "html2canvas": "latest",
+    "jspdf": "latest",
+    "lucide-react": "latest",
     "react": "latest",
     "react-dom": "latest",
-    "firebase": "latest",
-    "fuse.js": "latest",
-    "jspdf": "latest",
-    "html2canvas": "latest",
-    "react-router-dom": "latest",
     "react-hot-toast": "latest",
-    "lucide-react": "latest"
+    "react-router-dom": "latest",
+    "vite": "latest"
   },
   "devDependencies": {
-    "tailwindcss": "^3.4.17",
-    "postcss": "latest",
+    "@eslint/js": "latest",
     "autoprefixer": "latest",
     "eslint": "latest",
-    "@eslint/js": "latest",
     "eslint-plugin-react-hooks": "latest",
     "eslint-plugin-react-refresh": "latest",
-    "globals": "latest"
+    "globals": "latest",
+    "postcss": "latest",
+    "tailwindcss": "^3.4.17"
   }
 }
