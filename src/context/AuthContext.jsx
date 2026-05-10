@@ -2,6 +2,7 @@
 import { onAuthStateChanged } from "firebase/auth"
 import { doc, getDoc } from "firebase/firestore"
 import { useLocation, useNavigate } from "react-router-dom"
+import LoadingScreen from "../components/LoadingScreen.jsx"
 import { auth, db } from "../firebase/config"
 
 const AuthContext = createContext(null)
@@ -24,9 +25,7 @@ export function AuthProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    if (authLoading) {
-      return undefined
-    }
+    if (authLoading) return undefined
 
     if (!currentUser) {
       setShopSetupComplete(false)
@@ -39,10 +38,7 @@ export function AuthProvider({ children }) {
 
     getDoc(doc(db, "users", currentUser.uid, "settings", "shop"))
       .then((snapshot) => {
-        if (!active) {
-          return
-        }
-
+        if (!active) return
         const data = snapshot.data()
         const hasShop = snapshot.exists() && Boolean(data?.shopName?.trim())
         setShopSetupComplete(hasShop)
@@ -57,10 +53,7 @@ export function AuthProvider({ children }) {
         }
       })
       .catch(() => {
-        if (!active) {
-          return
-        }
-
+        if (!active) return
         setShopSetupComplete(false)
         setCheckingShop(false)
 
@@ -74,14 +67,15 @@ export function AuthProvider({ children }) {
     }
   }, [authLoading, currentUser, location.pathname, navigate])
 
+  const loading = authLoading || checkingShop
   const value = useMemo(
-    () => ({
-      currentUser,
-      loading: authLoading || checkingShop,
-      shopSetupComplete,
-    }),
-    [authLoading, checkingShop, currentUser, shopSetupComplete],
+    () => ({ currentUser, loading, shopSetupComplete }),
+    [currentUser, loading, shopSetupComplete],
   )
+
+  if (authLoading) {
+    return <LoadingScreen message="Starting SellerBot..." />
+  }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

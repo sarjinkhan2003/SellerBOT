@@ -1,10 +1,102 @@
+﻿@import url("https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
+:root {
+  --primary: #1D9E75;
+  --primary-dark: #157a5c;
+  --primary-light: #e8f8f3;
+  --danger: #e74c3c;
+  --warning: #f39c12;
+  --success: #27ae60;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6c757d;
+  --border: #e0e0e0;
+  --card-bg: #ffffff;
+  --page-bg: #f5f7fa;
+}
+
+* {
+  box-sizing: border-box;
   margin: 0;
+  padding: 0;
+}
+
+body {
   min-width: 320px;
   min-height: 100vh;
-  background: #f8fafc;
+  font-family: "Inter", "Hind Siliguri", sans-serif;
+  background-color: var(--page-bg);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+:lang(bn),
+.bangla {
+  font-family: "Hind Siliguri", sans-serif;
+}
+
+.card {
+  background: var(--card-bg);
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  padding: 20px;
+  margin-bottom: 16px;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background 0.2s;
+}
+
+.btn-primary:hover { background: var(--primary-dark); }
+
+.btn-outline {
+  background: transparent;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.badge-paid {
+  background: #d4edda;
+  color: #155724;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.badge-unpaid {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+.badge-partial {
+  background: #fff3cd;
+  color: #856404;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+}
+
+@media (max-width: 768px) {
+  .hide-mobile { display: none !important; }
+  .card { padding: 14px; }
+  table { font-size: 13px; }
 }
