@@ -259,9 +259,62 @@ function ZoneDetectionMessage({ zone }) {
 }
 
 function ZoneCard({ zone, baseDistrict, onEdit, onDelete }) {
-  return <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-start justify-between gap-3"><div><h3 className="text-xl font-semibold text-slate-950">{zone.area}</h3><p className="mt-1 text-sm font-medium text-[#1D9E75]">{zone.banglaArea}</p><p className="mt-1 text-sm text-slate-500">{zone.division}</p></div><div className="flex flex-col gap-2">{zone.isHomeCity && <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">Home City</span>}{zone.isOutsideBaseCity && <span className="rounded-md bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800">Outside {baseDistrict?.name || "Base City"}</span>}</div></div><div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm"><span className="text-slate-600">Charge </span><span className="font-semibold text-slate-950">৳{zone.charge}</span></div><div className="mt-4 flex flex-wrap gap-2">{(zone.keywords || []).map((keyword) => <span key={keyword} className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{keyword}</span>)}</div><div className="mt-5 grid grid-cols-2 gap-3"><button className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button" onClick={() => onEdit(zone)}><Edit2 className="h-4 w-4" />Edit</button><button className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700 transition hover:bg-red-100" type="button" onClick={() => onDelete(zone)}><Trash2 className="h-4 w-4" />Delete</button></div></article>
-}
+  const keywords = zone.keywords || []
+  const previewKeywords = zone.isOutsideBaseCity ? keywords.slice(0, 8) : keywords.slice(0, 6)
+  const hiddenCount = Math.max(0, keywords.length - previewKeywords.length)
+  const coveredDistrictCount = zone.isOutsideBaseCity && baseDistrict ? districts.filter((district) => district.name !== baseDistrict.name).length : 0
 
+  return (
+    <article className="flex min-h-64 flex-col justify-between rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="break-words text-xl font-semibold text-slate-950">{zone.area}</h3>
+            <p className="mt-1 text-sm font-medium text-[#1D9E75]">{zone.banglaArea}</p>
+            <p className="mt-1 text-sm text-slate-500">{zone.division}</p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2">
+            {zone.isHomeCity && <span className="rounded-md bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">Home City</span>}
+            {zone.isOutsideBaseCity && <span className="rounded-md bg-orange-50 px-2.5 py-1 text-xs font-semibold text-orange-800">Outside {baseDistrict?.name || "Base City"}</span>}
+          </div>
+        </div>
+
+        <div className="mt-4 rounded-md bg-slate-50 px-3 py-2 text-sm">
+          <span className="text-slate-600">Charge </span>
+          <span className="font-semibold text-slate-950">৳{zone.charge}</span>
+        </div>
+
+        {zone.isOutsideBaseCity ? (
+          <div className="mt-4 rounded-md border border-orange-100 bg-orange-50 px-3 py-3 text-sm text-orange-900">
+            <p className="font-semibold">Catch-all zone</p>
+            <p className="mt-1 text-xs leading-5 text-orange-800">
+              Covers unmatched addresses{coveredDistrictCount ? ` and ${coveredDistrictCount} districts outside ${baseDistrict?.name}` : " outside your base city"}.
+            </p>
+          </div>
+        ) : null}
+
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Keyword preview</p>
+          <div className="mt-2 flex max-h-20 flex-wrap gap-2 overflow-hidden">
+            {previewKeywords.map((keyword) => (
+              <span key={keyword} className="rounded-md bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">{keyword}</span>
+            ))}
+            {hiddenCount > 0 && <span className="rounded-md bg-slate-200 px-2 py-1 text-xs font-semibold text-slate-700">+{hiddenCount} more</span>}
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 grid grid-cols-2 gap-3">
+        <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button" onClick={() => onEdit(zone)}>
+          <Edit2 className="h-4 w-4" />Edit
+        </button>
+        <button className="inline-flex h-10 items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 text-sm font-semibold text-red-700 transition hover:bg-red-100" type="button" onClick={() => onDelete(zone)}>
+          <Trash2 className="h-4 w-4" />Delete
+        </button>
+      </div>
+    </article>
+  )
+}
 function ZoneModal({ baseDistrict, form, saving, selectedDistrict, onClose, onDistrictSelect, onFormChange, onSave }) {
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 px-4 py-6"><section className="max-h-full w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-xl"><div className="flex items-center justify-between border-b border-slate-200 px-5 py-4"><h3 className="text-xl font-semibold text-slate-950">Delivery Zone</h3><button className="inline-flex h-9 w-9 items-center justify-center rounded-md text-slate-500 transition hover:bg-slate-100 hover:text-slate-900" type="button" onClick={onClose} disabled={saving} aria-label="Close zone modal"><X className="h-5 w-5" /></button></div><form className="space-y-5 px-5 py-5" onSubmit={onSave}>{!form.isOutsideBaseCity && <DistrictSelect label="Area Name" selectedDistrict={selectedDistrict} onSelect={onDistrictSelect} disabled={saving} />}{form.isOutsideBaseCity && <p className="rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-800">Outside zone will be saved as Outside {baseDistrict?.name || selectedDistrict?.name || "Base City"}</p>}<label className="block"><span className="text-sm font-medium text-slate-700">Delivery Charge (৳)</span><input className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" type="number" min="0" value={form.charge} onChange={(event) => onFormChange((current) => ({ ...current, charge: event.target.value }))} disabled={saving} /></label><label className="block"><span className="text-sm font-medium text-slate-700">Keywords</span><input className="mt-2 h-11 w-full rounded-md border border-slate-300 bg-white px-3 text-sm outline-none transition focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" value={form.keywords} onChange={(event) => onFormChange((current) => ({ ...current, keywords: event.target.value }))} disabled={saving} /></label><label className="flex items-center gap-3 rounded-md bg-slate-50 px-3 py-3 text-sm font-medium text-slate-700"><input className="h-4 w-4 accent-[#1D9E75]" type="checkbox" checked={form.isHomeCity} onChange={(event) => onFormChange((current) => ({ ...current, isHomeCity: event.target.checked }))} disabled={saving} />Is this your Home City?</label><label className="flex items-center gap-3 rounded-md bg-orange-50 px-3 py-3 text-sm font-medium text-orange-900"><input className="h-4 w-4 accent-[#f39c12]" type="checkbox" checked={form.isOutsideBaseCity} onChange={(event) => onFormChange((current) => ({ ...current, isOutsideBaseCity: event.target.checked }))} disabled={saving} />Is this Outside {baseDistrict?.name || "BaseCity"} catch-all?</label><div className="flex justify-end gap-3 border-t border-slate-200 pt-5"><button className="h-11 rounded-md border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 transition hover:bg-slate-50" type="button" onClick={onClose} disabled={saving}>Cancel</button><button className="h-11 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765] disabled:opacity-70" type="submit" disabled={saving}>{saving ? "Saving..." : "Save Zone"}</button></div></form></section></div>
 }
@@ -279,4 +332,5 @@ function splitCommaList(value) {
 }
 
 export default DeliveryZones
+
 
