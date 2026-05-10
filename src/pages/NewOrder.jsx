@@ -32,6 +32,7 @@ function NewOrder() {
   const [zones, setZones] = useState([])
   const [shop, setShop] = useState(null)
   const [order, setOrder] = useState(createEmptyOrder())
+  const [orderNumber] = useState(() => `SB-${String(Date.now()).slice(-8)}`)
   const [saving, setSaving] = useState(false)
 
   const subtotal = useMemo(() => order.products.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0), [order.products])
@@ -99,7 +100,6 @@ function NewOrder() {
   const updateProductRow = (index, field, value) => setOrder((current) => ({ ...current, products: current.products.map((row, rowIndex) => rowIndex === index ? recalcRow(updateRowFromField(row, field, value, products)) : row) }))
   const addProductRow = () => setOrder((current) => ({ ...current, products: [...current.products, createProductRow()] }))
   const removeProductRow = (index) => setOrder((current) => ({ ...current, products: current.products.filter((_, rowIndex) => rowIndex !== index) }))
-  const orderNumber = useMemo(() => `SB-${String(Date.now()).slice(-8)}`, [stage])
 
   const handlePDFDownload = async () => { const canvas = await html2canvas(invoiceRef.current, { scale: 2 }); const pdf = new jsPDF("p", "mm", "a4"); const width = pdf.internal.pageSize.getWidth(); pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, width, (canvas.height * width) / canvas.width); pdf.save(`SellerBot-Invoice-${orderNumber}.pdf`) }
   const handleImageDownload = async () => { const canvas = await html2canvas(invoiceRef.current, { scale: 2 }); const link = document.createElement("a"); link.download = `SellerBot-Invoice-${orderNumber}.png`; link.href = canvas.toDataURL("image/png"); link.click() }
@@ -129,5 +129,28 @@ function recalcRow(row) { const quantity = Number(row.quantity || 1); const unit
 function normalizeProductRows(rows = []) { return rows.length ? rows.map(recalcRow) : [createProductRow()] }
 function getPaymentAmounts(type, subtotal, delivery, grandTotal) { if (type === "full_online") return { onlineAmount: grandTotal, codAmount: 0 }; if (type === "delivery_only_online") return { onlineAmount: delivery, codAmount: subtotal }; return { onlineAmount: 0, codAmount: grandTotal } }
 
+function getLegacyPaymentFields(order) {
+  if (order.paymentType === "full_online") {
+    return {
+      paymentMethod: order.productPaymentMethod || "bKash",
+      paymentStatus: order.productPaymentStatus || "Unpaid",
+      transactionId: order.productTransactionId || "",
+    }
+  }
+
+  if (order.paymentType === "delivery_only_online") {
+    return {
+      productPaymentMethod: "COD",
+      productPaymentStatus: "Unpaid",
+      paymentMethod: order.deliveryPaymentMethod || "bKash",
+      paymentStatus: order.deliveryPaymentStatus === "Paid" ? "Partial" : "Unpaid",
+      transactionId: order.deliveryTransactionId || "",
+    }
+  }
+
+  return { paymentMethod: "COD", paymentStatus: "Unpaid", transactionId: "" }
+}
+
 export default NewOrder
+
 
