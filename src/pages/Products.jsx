@@ -14,6 +14,7 @@ import { Edit2, PackagePlus, RefreshCw, Search, Trash2, X } from "lucide-react"
 import toast from "react-hot-toast"
 import { useAuth } from "../context/AuthContext.jsx"
 import { db } from "../firebase/config.js"
+import { isEmbeddingAvailable } from "../utils/embeddings.js"
 import {
   deleteProductEmbedding,
   embedAndStoreProduct,
@@ -43,6 +44,7 @@ function Products() {
   const [ragActive, setRagActive] = useState(false)
   const [syncing, setSyncing] = useState(false)
   const [syncProgress, setSyncProgress] = useState("")
+  const embeddingReady = isEmbeddingAvailable()
 
   useEffect(() => {
     if (!currentUser?.uid) {
@@ -281,8 +283,8 @@ function Products() {
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${ragActive ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
-            AI Search: {ragActive ? "Active" : "Not synced"}
+          <span className={`rounded-full px-3 py-1 text-xs font-semibold ${embeddingReady ? "bg-emerald-50 text-emerald-800" : "bg-amber-50 text-amber-800"}`}>
+            {embeddingReady ? `AI Search: ${ragActive ? "Ready" : "Ready - sync needed"}` : "AI Search: Add COHERE key"}
           </span>
           {products.length > 0 && (
             <button

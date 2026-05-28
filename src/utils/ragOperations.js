@@ -1,6 +1,8 @@
-import { supabase } from "../supabase/client.js"
+﻿import { supabase } from "../supabase/client.js"
 import {
+  generateBatchEmbeddings,
   generateEmbedding,
+  generateQueryEmbedding,
   prepareProductText,
   prepareZoneText,
   prepareChatQueryText,
@@ -61,6 +63,7 @@ export async function embedAndStoreProduct(uid, product) {
     return false
   }
 }
+
 export async function embedAndStoreZone(uid, zone) {
   try {
     if (!isRagConfigured() || !uid || !zone?.id) return false
@@ -104,13 +107,13 @@ export async function searchProductsByVector(uid, chatText, limit = 5) {
     if (!isRagConfigured() || !uid) return []
     const queryText = prepareChatQueryText(chatText)
     if (!queryText) return []
-    const queryEmbedding = await generateEmbedding(queryText)
+    const queryEmbedding = await generateQueryEmbedding(queryText)
     if (!queryEmbedding) return []
 
     const { data, error } = await supabase.rpc("match_products", {
       query_embedding: queryEmbedding,
       seller_uid_filter: uid,
-      match_threshold: 0.45,
+      match_threshold: 0.5,
       match_count: limit,
     })
 
@@ -125,13 +128,13 @@ export async function searchProductsByVector(uid, chatText, limit = 5) {
 export async function searchZonesByVector(uid, addressText, limit = 3) {
   try {
     if (!isRagConfigured() || !uid || !addressText) return []
-    const queryEmbedding = await generateEmbedding(addressText)
+    const queryEmbedding = await generateQueryEmbedding(addressText)
     if (!queryEmbedding) return []
 
     const { data, error } = await supabase.rpc("match_zones", {
       query_embedding: queryEmbedding,
       seller_uid_filter: uid,
-      match_threshold: 0.35,
+      match_threshold: 0.4,
       match_count: limit,
     })
 
@@ -144,23 +147,94 @@ export async function searchZonesByVector(uid, addressText, limit = 3) {
 }
 
 export async function syncAllProductEmbeddings(uid, products, onProgress) {
-  let succeeded = 0
-  for (let index = 0; index < products.length; index += 1) {
-    const ok = await embedAndStoreProduct(uid, products[index])
-    if (ok) succeeded += 1
-    onProgress?.(index + 1, products.length)
+  try {
+    if (!isRagConfigured() || !uid || !products?.length) return { succeeded: 0, total: products?.length || 0 }
+
+    const texts = products.map((product) => prepareProductText(product))
+    const embeddings = await generateBatchEmbeddings(texts)
+
+    if (!embeddings || embeddings.length === 0) {
+      console.error("Batch embedding failed")
+      return { succeeded: 0, total: products.length }
+    }
+
+    let succeeded = 0
+    for (let index = 0; index < products.length; index += 1) {
+      const product = products[index]
+      const embedding = embeddings[index]
+      if (!embedding) {
+        onProgress?.(index + 1, products.length)
+        continue
+      }
+
+      const { error } = await supabase
+        .from("product_embeddings")
+        .upsert({
+          seller_uid: uid,
+          product_id: product.id,
+          product_name: product.name,
+          bangla_name: product.banglaName || "",
+          price: product.price,
+          cost_price: product.costPrice || 0,
+          tags: product.tags || [],
+          embedding,
+        }, { onConflict: "seller_uid,product_id" })
+
+      if (!error) succeeded += 1
+      else console.error("Upsert failed for", product.name, error)
+      onProgress?.(index + 1, products.length)
+    }
+
+    return { succeeded, total: products.length }
+  } catch (error) {
+    console.error("syncAllProductEmbeddings failed:", error)
+    return { succeeded: 0, total: products?.length || 0 }
   }
-  return { succeeded, total: products.length }
 }
 
 export async function syncAllZoneEmbeddings(uid, zones, onProgress) {
-  let succeeded = 0
-  for (let index = 0; index < zones.length; index += 1) {
-    const ok = await embedAndStoreZone(uid, zones[index])
-    if (ok) succeeded += 1
-    onProgress?.(index + 1, zones.length)
+  try {
+    if (!isRagConfigured() || !uid || !zones?.length) return { succeeded: 0, total: zones?.length || 0 }
+
+    const texts = zones.map((zone) => prepareZoneText(zone))
+    const embeddings = await generateBatchEmbeddings(texts)
+
+    if (!embeddings || embeddings.length === 0) {
+      console.error("Batch zone embedding failed")
+      return { succeeded: 0, total: zones.length }
+    }
+
+    let succeeded = 0
+    for (let index = 0; index < zones.length; index += 1) {
+      const zone = zones[index]
+      const embedding = embeddings[index]
+      if (!embedding) {
+        onProgress?.(index + 1, zones.length)
+        continue
+      }
+
+      const { error } = await supabase
+        .from("zone_embeddings")
+        .upsert({
+          seller_uid: uid,
+          zone_id: zone.id,
+          area: zone.area || "",
+          bangla_area: zone.banglaArea || "",
+          charge: Number(zone.charge || 0),
+          keywords: zone.keywords || [],
+          embedding,
+        }, { onConflict: "seller_uid,zone_id" })
+
+      if (!error) succeeded += 1
+      else console.error("Zone upsert failed for", zone.area, error)
+      onProgress?.(index + 1, zones.length)
+    }
+
+    return { succeeded, total: zones.length }
+  } catch (error) {
+    console.error("syncAllZoneEmbeddings failed:", error)
+    return { succeeded: 0, total: zones?.length || 0 }
   }
-  return { succeeded, total: zones.length }
 }
 
 export async function hasProductEmbeddings(uid) {

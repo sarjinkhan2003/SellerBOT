@@ -1,12 +1,22 @@
-import { createClient } from "@supabase/supabase-js"
+﻿import { createClient } from "@supabase/supabase-js"
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
-console.log("Supabase URL:", import.meta.env.VITE_SUPABASE_URL ? "Set" : "MISSING")
-console.log("Supabase Key:", import.meta.env.VITE_SUPABASE_ANON_KEY ? "Set" : "MISSING")
+const rawUrl = import.meta.env.VITE_SUPABASE_URL || ""
+const supabaseUrl = rawUrl
+  .replace("/rest/v1", "")
+  .replace(/\/$/, "")
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn("Supabase credentials missing in .env. RAG search is disabled until configured.")
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || ""
+
+if (!supabaseUrl) {
+  console.error("VITE_SUPABASE_URL missing")
+} else {
+  console.log("Supabase URL: Set", supabaseUrl)
 }
 
-export const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null
+if (!supabaseKey) {
+  console.error("VITE_SUPABASE_ANON_KEY missing")
+} else {
+  console.log("Supabase Key: Set")
+}
+
+export const supabase = createClient(supabaseUrl, supabaseKey)

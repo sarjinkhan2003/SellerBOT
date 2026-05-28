@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp } from "firebase/firestore"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
@@ -6,7 +6,6 @@ import { ArrowLeft, Check, ClipboardList, CreditCard, FileDown, ImageDown, Loade
 import toast from "react-hot-toast"
 import { useNavigate } from "react-router-dom"
 import InvoiceTemplate from "../components/InvoiceTemplate.jsx"
-import RAGStatus from "../components/RAGStatus.jsx"
 import { useAuth } from "../context/AuthContext.jsx"
 import { db } from "../firebase/config.js"
 import { applyCorrections, saveCorrection } from "../utils/correctionMemory.js"
@@ -14,7 +13,6 @@ import { fuzzyMatchSingle } from "../utils/fuzzyMatcher.js"
 import { convertToStructuredText } from "../utils/geminiHelper.js"
 import { parseChat, parseProductQuantityPairs } from "../utils/parser.js"
 import { printInvoiceElement } from "../utils/printInvoice.js"
-import { generateEmbedding } from "../utils/embeddings.js"
 import { searchProductsByVector, searchZonesByVector } from "../utils/ragOperations.js"
 import { detectZone } from "../utils/zoneDetector.js"
 
@@ -150,26 +148,12 @@ function NewOrder() {
   const [order, setOrder] = useState(createEmptyOrder())
   const [orderNumber] = useState(() => `SB-${String(Date.now()).slice(-8)}`)
   const [saving, setSaving] = useState(false)
-  const [ragLoading, setRagLoading] = useState(false)
 
   const subtotal = useMemo(() => order.products.reduce((sum, item) => sum + Number(item.totalPrice || 0), 0), [order.products])
   const totalCost = useMemo(() => order.products.reduce((sum, item) => sum + Number(item.costPrice || 0) * Number(item.quantity || 1), 0), [order.products])
   const grandTotal = subtotal + Number(order.deliveryCharge || 0) - Number(order.discount || 0)
   const paymentAmounts = getPaymentAmounts(order.paymentType, subtotal, Number(order.deliveryCharge || 0), grandTotal)
   const enrichedOrder = { ...order, ...getLegacyPaymentFields(order), chatType, subtotal, grandTotal, productRevenue: subtotal, deliveryRevenue: Number(order.deliveryCharge || 0), grossRevenue: grandTotal, totalCost, grossProfit: subtotal - totalCost, profitMargin: subtotal > 0 ? (((subtotal - totalCost) / subtotal) * 100).toFixed(1) : "0.0", onlineAmount: paymentAmounts.onlineAmount, codAmount: paymentAmounts.codAmount, parsedBy }
-  useEffect(() => {
-    let active = true
-    setRagLoading(true)
-    generateEmbedding("warm up")
-      .catch(() => {})
-      .finally(() => {
-        if (active) setRagLoading(false)
-      })
-    return () => {
-      active = false
-    }
-  }, [])
-
   const setStep = (index) => {
     const source = chatType === "structured" ? structuredSteps : unstructuredSteps
     setLoadingMessage(source[index] || "")
@@ -309,9 +293,9 @@ function NewOrder() {
   const handlePrintInvoice = async () => { await printInvoiceElement(invoiceRef.current) }
   const saveSale = async () => { try { setSaving(true); await addDoc(collection(db, "users", currentUser.uid, "orders"), { ...enrichedOrder, orderNumber, invoiceURL: "", createdAt: serverTimestamp() }); toast.success("Order saved and sale recorded."); navigate("/sales") } catch (error) { toast.error(error.message || "Could not save order.") } finally { setSaving(false) } }
 
-  if (stage === 1) return <><ChatStage chatText={chatText} chatType={chatType} loadingSteps={loadingSteps} loadingMessage={loadingMessage} onChatChange={setChatText} onChatTypeChange={setChatType} onParse={handleParseChat} /><RAGStatus isLoading={ragLoading} /></>
-  if (stage === 2) return <><ReviewStage order={order} products={products} zones={zones} subtotal={subtotal} grandTotal={grandTotal} paymentAmounts={paymentAmounts} parsedBy={parsedBy} onAddProduct={addProductRow} onBack={() => setStage(1)} onGenerate={() => setStage(3)} onProductRemove={removeProductRow} onProductUpdate={updateProductRow} onUpdate={updateOrder} onZoneChange={updateZone} /><RAGStatus isLoading={ragLoading} /></>
-  return <><section className="space-y-6"><div className="flex items-center justify-between"><h2 className="text-3xl font-semibold">Invoice Preview</h2><button className="btn-outline" onClick={() => setStage(2)}><ArrowLeft className="mr-2 inline h-4 w-4" />Back to Edit</button></div><InvoiceTemplate ref={invoiceRef} order={{ ...enrichedOrder, orderNumber }} shop={shop} /><div className="grid gap-3 sm:grid-cols-4"><button className="btn-outline" onClick={handlePDFDownload}><FileDown className="mr-2 inline h-4 w-4" />Download PDF</button><button className="btn-outline" onClick={handleImageDownload}><ImageDown className="mr-2 inline h-4 w-4" />Download Image</button><button className="btn-outline" onClick={handlePrintInvoice}><Printer className="mr-2 inline h-4 w-4" />Print Invoice</button><button className="btn-primary" onClick={saveSale} disabled={saving}>{saving ? "Saving..." : "Save & Record Sale"}</button></div></section><RAGStatus isLoading={ragLoading} /></>
+  if (stage === 1) return <ChatStage chatText={chatText} chatType={chatType} loadingSteps={loadingSteps} loadingMessage={loadingMessage} onChatChange={setChatText} onChatTypeChange={setChatType} onParse={handleParseChat} />
+  if (stage === 2) return <ReviewStage order={order} products={products} zones={zones} subtotal={subtotal} grandTotal={grandTotal} paymentAmounts={paymentAmounts} parsedBy={parsedBy} onAddProduct={addProductRow} onBack={() => setStage(1)} onGenerate={() => setStage(3)} onProductRemove={removeProductRow} onProductUpdate={updateProductRow} onUpdate={updateOrder} onZoneChange={updateZone} />
+  return <section className="space-y-6"><div className="flex items-center justify-between"><h2 className="text-3xl font-semibold">Invoice Preview</h2><button className="btn-outline" onClick={() => setStage(2)}><ArrowLeft className="mr-2 inline h-4 w-4" />Back to Edit</button></div><InvoiceTemplate ref={invoiceRef} order={{ ...enrichedOrder, orderNumber }} shop={shop} /><div className="grid gap-3 sm:grid-cols-4"><button className="btn-outline" onClick={handlePDFDownload}><FileDown className="mr-2 inline h-4 w-4" />Download PDF</button><button className="btn-outline" onClick={handleImageDownload}><ImageDown className="mr-2 inline h-4 w-4" />Download Image</button><button className="btn-outline" onClick={handlePrintInvoice}><Printer className="mr-2 inline h-4 w-4" />Print Invoice</button><button className="btn-primary" onClick={saveSale} disabled={saving}>{saving ? "Saving..." : "Save & Record Sale"}</button></div></section>
 }
 
 function ChatStage({ chatText, chatType, loadingSteps, loadingMessage, onChatChange, onChatTypeChange, onParse }) {
