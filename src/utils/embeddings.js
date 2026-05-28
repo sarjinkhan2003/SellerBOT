@@ -1,4 +1,4 @@
-﻿import { pipeline } from "@xenova/transformers"
+import { pipeline } from "@xenova/transformers"
 
 let embedder = null
 let loadingPromise = null
@@ -24,18 +24,22 @@ async function getEmbedder() {
 
 export async function generateEmbedding(text) {
   try {
+    console.log("Loading embedder model...")
     const model = await getEmbedder()
+    console.log("Model loaded, generating embedding for:", String(text || "").slice(0, 50))
+
     const output = await model(String(text || ""), {
       pooling: "mean",
       normalize: true,
     })
+
+    console.log("Embedding generated, length:", output.data.length)
     return Array.from(output.data)
   } catch (error) {
-    console.error("Embedding generation failed:", error)
+    console.error("generateEmbedding FAILED:", error.message, error)
     return null
   }
 }
-
 export function prepareProductText(product) {
   return [
     product.name || "",

@@ -1,4 +1,4 @@
-﻿import { supabase } from "../supabase/client.js"
+import { supabase } from "../supabase/client.js"
 import {
   generateEmbedding,
   prepareProductText,
@@ -14,31 +14,53 @@ function isRagConfigured() {
 
 export async function embedAndStoreProduct(uid, product) {
   try {
-    if (!isRagConfigured() || !uid || !product?.id) return false
-    const embedding = await generateEmbedding(prepareProductText(product))
-    if (!embedding) throw new Error("Embedding failed")
+    console.log("Starting embed for product:", product?.name, "uid:", uid)
 
-    const { error } = await supabase
+    if (!isRagConfigured() || !uid || !product?.id) {
+      console.error("embedAndStoreProduct missing config or required data:", {
+        supabaseConfigured: Boolean(supabase),
+        uid,
+        productId: product?.id,
+      })
+      return false
+    }
+
+    const text = prepareProductText(product)
+    console.log("Prepared text:", text)
+
+    const embedding = await generateEmbedding(text)
+    console.log("Embedding result:", embedding ? `Success (${embedding.length} dims)` : "FAILED - null returned")
+
+    if (!embedding) throw new Error("Embedding generation returned null")
+
+    console.log("Saving to Supabase...")
+    const { data, error } = await supabase
       .from("product_embeddings")
       .upsert({
         seller_uid: uid,
         product_id: product.id,
-        product_name: product.name || "",
+        product_name: product.name,
         bangla_name: product.banglaName || "",
-        price: Number(product.price || 0),
-        cost_price: Number(product.costPrice || 0),
+        price: product.price,
+        cost_price: product.costPrice || 0,
         tags: product.tags || [],
         embedding,
-      }, { onConflict: "seller_uid,product_id" })
+      }, {
+        onConflict: "seller_uid,product_id",
+      })
 
-    if (error) throw error
+    if (error) {
+      console.error("Supabase upsert error:", error.message, error.details, error.hint)
+      throw error
+    }
+
+    console.log("Success! Product embedded:", product.name, data)
     return true
   } catch (error) {
-    console.error("Store product embedding failed:", error)
+    console.error("embedAndStoreProduct FAILED:", error.message, error)
     return false
   }
 }
-
 export async function embedAndStoreZone(uid, zone) {
   try {
     if (!isRagConfigured() || !uid || !zone?.id) return false
