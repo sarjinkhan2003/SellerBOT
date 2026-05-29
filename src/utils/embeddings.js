@@ -1,4 +1,4 @@
-/**
+﻿/**
  * EMBEDDING PROVIDER: Cohere embed-multilingual-v3
  *
  * TO SWITCH TO OLLAMA EMBEDDINGS LATER:
@@ -30,7 +30,6 @@ export const EMBEDDING_DIM = 1024
 
 async function cohereEmbed(texts, inputType = "search_document") {
   if (!COHERE_API_KEY) {
-    console.warn("VITE_COHERE_API_KEY not set")
     return null
   }
 
@@ -122,3 +121,4 @@ export function prepareChatQueryText(chatText) {
 export function isEmbeddingAvailable() {
   return Boolean(import.meta.env.VITE_COHERE_API_KEY)
 }
+

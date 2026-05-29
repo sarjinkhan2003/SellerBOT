@@ -1,22 +1,9 @@
-import { GoogleGenerativeAI } from "@google/generative-ai"
-
-function getModel() {
-  if (!import.meta.env.VITE_GEMINI_API_KEY) {
-    console.warn("Gemini API key not set. AI fallback disabled.")
-    return null
-  }
-  return new GoogleGenerativeAI(import.meta.env.VITE_GEMINI_API_KEY).getGenerativeModel({ model: "gemini-1.5-flash" })
-}
-
-export async function convertToStructured(chatText, productCatalog = [], zones = [], ragProducts = [], ragZones = []) {
-  const model = getModel()
-  if (!model) return convertBanglishFallback(chatText, productCatalog, zones)
-
+﻿export async function convertToStructured(chatText, productCatalog = [], zones = [], ragProducts = [], ragZones = []) {
   const productList = ragProducts.length > 0
-    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (৳${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join(", ")
-    : productCatalog.slice(0, 15).map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""} (৳${p.price})`).join(", ")
+    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (à§³${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join(", ")
+    : productCatalog.slice(0, 15).map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""} (à§³${p.price})`).join(", ")
   const zoneList = ragZones.length > 0
-    ? ragZones.map((z) => `${z.area} (৳${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
+    ? ragZones.map((z) => `${z.area} (à§³${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
     : zones.map((z) => z.area).join(", ")
   const prompt = `
 You are SellerBot's order pre-processor for Bangladeshi F-commerce sellers.
@@ -36,15 +23,15 @@ Prefer products and zones with higher match scores when RAG candidates are liste
 USE THESE STRUCTURED FORMATS AS THE TARGET MEANING:
 
 BANGLA TEMPLATE:
-নামঃ customer name
-মোবাইলঃ 01XXXXXXXXX
-ঠিকানাঃ full delivery address
-পণ্যঃ first product name
-পরিমাণঃ quantity
-পণ্যঃ second product name
-পরিমাণঃ quantity
-পেমেন্টঃ COD/bKash/Nagad/Rocket/Bank/Other
-নোটঃ optional instruction
+à¦¨à¦¾à¦®à¦ƒ customer name
+à¦®à§‹à¦¬à¦¾à¦‡à¦²à¦ƒ 01XXXXXXXXX
+à¦ à¦¿à¦•à¦¾à¦¨à¦¾à¦ƒ full delivery address
+à¦ªà¦£à§à¦¯à¦ƒ first product name
+à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ quantity
+à¦ªà¦£à§à¦¯à¦ƒ second product name
+à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ quantity
+à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿà¦ƒ COD/bKash/Nagad/Rocket/Bank/Other
+à¦¨à§‹à¦Ÿà¦ƒ optional instruction
 
 ENGLISH TEMPLATE:
 Name: customer name
@@ -69,17 +56,17 @@ note: optional instruction
 BANGLISH MEANING RULES:
 - "ami X" / "ami X," / "ami X boltesi" means customerName is X.
 - "amar nam X" means customerName is X.
-- Never include vai, bhai, apu, apa, ভাই, আপু, আপা in customerName.
-- "X e thaki", "X te thaki", "X theke", "X e achi", "X তে থাকি" means address/location is X.
+- Never include vai, bhai, apu, apa, à¦­à¦¾à¦‡, à¦†à¦ªà§, à¦†à¦ªà¦¾ in customerName.
+- "X e thaki", "X te thaki", "X theke", "X e achi", "X à¦¤à§‡ à¦¥à¦¾à¦•à¦¿" means address/location is X.
 - Keep the address exactly as the customer wrote it when possible.
-- "lagbe", "chai", "nibo", "নেব", "চাই" means the customer wants to order.
-- "ar", "and", "+", "আর" separates multiple products.
+- "lagbe", "chai", "nibo", "à¦¨à§‡à¦¬", "à¦šà¦¾à¦‡" means the customer wants to order.
+- "ar", "and", "+", "à¦†à¦°" separates multiple products.
 - "2ta shirt ar 1ta pant" means shirt quantity 2 and pant quantity 1.
-- ekta/একটা=1, duita/দুইটা=2, tinta/তিনটা=3, charta=4, pachta=5.
-- 2ta/২টা, 2 pcs, 2 piece, 2 nos all mean quantity 2.
-- bkash/bikash/বিকাশ korbo/dibo means bKash.
-- nagad/নগদ e dibo means Nagad.
-- rocket/রকেট means Rocket.
+- ekta/à¦à¦•à¦Ÿà¦¾=1, duita/à¦¦à§à¦‡à¦Ÿà¦¾=2, tinta/à¦¤à¦¿à¦¨à¦Ÿà¦¾=3, charta=4, pachta=5.
+- 2ta/à§¨à¦Ÿà¦¾, 2 pcs, 2 piece, 2 nos all mean quantity 2.
+- bkash/bikash/à¦¬à¦¿à¦•à¦¾à¦¶ korbo/dibo means bKash.
+- nagad/à¦¨à¦—à¦¦ e dibo means Nagad.
+- rocket/à¦°à¦•à§‡à¦Ÿ means Rocket.
 - cash/COD means COD.
 
 IMPORTANT PRODUCT RULES:
@@ -115,26 +102,18 @@ Use null when a field is missing.
 }
 `
   const fallback = convertBanglishFallback(chatText, productCatalog, zones)
-
-  try {
-    const result = await model.generateContent(prompt)
-    const parsed = parseJsonResponse(result.response.text())
-    return hasUsefulExtraction(parsed) ? mergeWithFallback(parsed, fallback) : fallback
-  } catch (err) {
-    console.error("Gemini pre-processor failed:", err)
-    return fallback
-  }
+  const parsed = await convertJsonWithGroq(prompt)
+  return hasUsefulExtraction(parsed) ? mergeWithFallback(parsed, fallback) : fallback
 }
 
 export async function convertToStructuredText(chatText, productCatalog = [], zones = [], ragProducts = [], ragZones = []) {
   const localFallback = structuredTextFromFallback(convertBanglishFallback(chatText, productCatalog, zones))
-  const model = getModel()
 
   const productList = ragProducts.length > 0
-    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (৳${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join("\n")
+    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (à§³${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join("\n")
     : productCatalog.slice(0, 15).map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""}${p.tags?.length ? " (tags: " + p.tags.join(", ") + ")" : ""}`).join("\n")
   const zoneList = ragZones.length > 0
-    ? ragZones.map((z) => `${z.area}${z.bangla_area ? "/" + z.bangla_area : ""} (৳${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
+    ? ragZones.map((z) => `${z.area}${z.bangla_area ? "/" + z.bangla_area : ""} (à§³${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
     : zones.slice(0, 15).map((z) => `${z.area}${z.banglaArea ? "/" + z.banglaArea : ""}`).join(", ")
 
   const prompt = `
@@ -167,19 +146,19 @@ Payment: COD/bKash/Nagad/Rocket/Bank/Other
 Note: optional instruction or blank
 
 UNDERSTAND BANGLA, ENGLISH, AND BANGLISH:
-- "আপু আমার নাম সুমাইয়া" => Name: সুমাইয়া
-- "ভাই আমার নাম করিম" => Name: করিম
+- "à¦†à¦ªà§ à¦†à¦®à¦¾à¦° à¦¨à¦¾à¦® à¦¸à§à¦®à¦¾à¦‡à¦¯à¦¼à¦¾" => Name: à¦¸à§à¦®à¦¾à¦‡à¦¯à¦¼à¦¾
+- "à¦­à¦¾à¦‡ à¦†à¦®à¦¾à¦° à¦¨à¦¾à¦® à¦•à¦°à¦¿à¦®" => Name: à¦•à¦°à¦¿à¦®
 - "ami karim" / "amar nam karim" => Name: karim
-- Never include আপু, ভাই, apu, vai, bhai, apa in the name.
-- "ঢাকা মিরপুর ১০ এ থাকি" => Address: ঢাকা মিরপুর ১০
+- Never include à¦†à¦ªà§, à¦­à¦¾à¦‡, apu, vai, bhai, apa in the name.
+- "à¦¢à¦¾à¦•à¦¾ à¦®à¦¿à¦°à¦ªà§à¦° à§§à§¦ à¦ à¦¥à¦¾à¦•à¦¿" => Address: à¦¢à¦¾à¦•à¦¾ à¦®à¦¿à¦°à¦ªà§à¦° à§§à§¦
 - "sylhet e thaki" => Address: sylhet
 - "mirpur 10 e achi" => Address: mirpur 10
-- "একটা শার্ট আর দুইটা প্যান্ট নিবো" => Product: শার্ট Quantity: 1 and Product: প্যান্ট Quantity: 2
+- "à¦à¦•à¦Ÿà¦¾ à¦¶à¦¾à¦°à§à¦Ÿ à¦†à¦° à¦¦à§à¦‡à¦Ÿà¦¾ à¦ªà§à¦¯à¦¾à¦¨à§à¦Ÿ à¦¨à¦¿à¦¬à§‹" => Product: à¦¶à¦¾à¦°à§à¦Ÿ Quantity: 1 and Product: à¦ªà§à¦¯à¦¾à¦¨à§à¦Ÿ Quantity: 2
 - "2ta shirt ar 1ta pant lagbe" => Product: shirt Quantity: 2 and Product: pant Quantity: 1
-- একটা/একটি/ekta=1, দুইটা/দুটো/duita=2, তিনটা/tinta=3, চারটা/charta=4, পাঁচটা/pachta=5.
-- "নিবো", "নেব", "চাই", "lagbe", "nibo", "need", "want" indicate products.
-- "বিকাশে পেমেন্ট করবো" or "bkash/bikash e dibo" => Payment: bKash
-- "নগদে দিবো" or "nagad e dibo" => Payment: Nagad
+- à¦à¦•à¦Ÿà¦¾/à¦à¦•à¦Ÿà¦¿/ekta=1, à¦¦à§à¦‡à¦Ÿà¦¾/à¦¦à§à¦Ÿà§‹/duita=2, à¦¤à¦¿à¦¨à¦Ÿà¦¾/tinta=3, à¦šà¦¾à¦°à¦Ÿà¦¾/charta=4, à¦ªà¦¾à¦à¦šà¦Ÿà¦¾/pachta=5.
+- "à¦¨à¦¿à¦¬à§‹", "à¦¨à§‡à¦¬", "à¦šà¦¾à¦‡", "lagbe", "nibo", "need", "want" indicate products.
+- "à¦¬à¦¿à¦•à¦¾à¦¶à§‡ à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ à¦•à¦°à¦¬à§‹" or "bkash/bikash e dibo" => Payment: bKash
+- "à¦¨à¦—à¦¦à§‡ à¦¦à¦¿à¦¬à§‹" or "nagad e dibo" => Payment: Nagad
 - "cash" or "cod" => Payment: COD
 - Phone may use Bangla digits. Convert phone to English digits.
 - Match product words to the closest seller catalog item when possible, but keep the extracted product name if unsure.
@@ -187,21 +166,21 @@ UNDERSTAND BANGLA, ENGLISH, AND BANGLISH:
 - If payment is not stated, use Payment: COD.
 
 EXAMPLE 1 INPUT:
-আপু আমার নাম সুমাইয়া
-ঢাকা মিরপুর ১০ এ থাকি
-একটা শার্ট আর দুইটা প্যান্ট নিবো
-বিকাশে পেমেন্ট করবো
-০১৭১২৩৪৫৬৭৮
+à¦†à¦ªà§ à¦†à¦®à¦¾à¦° à¦¨à¦¾à¦® à¦¸à§à¦®à¦¾à¦‡à¦¯à¦¼à¦¾
+à¦¢à¦¾à¦•à¦¾ à¦®à¦¿à¦°à¦ªà§à¦° à§§à§¦ à¦ à¦¥à¦¾à¦•à¦¿
+à¦à¦•à¦Ÿà¦¾ à¦¶à¦¾à¦°à§à¦Ÿ à¦†à¦° à¦¦à§à¦‡à¦Ÿà¦¾ à¦ªà§à¦¯à¦¾à¦¨à§à¦Ÿ à¦¨à¦¿à¦¬à§‹
+à¦¬à¦¿à¦•à¦¾à¦¶à§‡ à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿ à¦•à¦°à¦¬à§‹
+à§¦à§§à§­à§§à§¨à§©à§ªà§«à§¬à§­à§®
 
 EXAMPLE 1 OUTPUT:
-Name: সুমাইয়া
+Name: à¦¸à§à¦®à¦¾à¦‡à¦¯à¦¼à¦¾
 Mobile: 01712345678
-Address: ঢাকা মিরপুর ১০
+Address: à¦¢à¦¾à¦•à¦¾ à¦®à¦¿à¦°à¦ªà§à¦° à§§à§¦
 
-Product: শার্ট
+Product: à¦¶à¦¾à¦°à§à¦Ÿ
 Quantity: 1
 
-Product: প্যান্ট
+Product: à¦ªà§à¦¯à¦¾à¦¨à§à¦Ÿ
 Quantity: 2
 
 Payment: bKash
@@ -235,16 +214,6 @@ ${chatText}
 
 Return only the structured text. No markdown. No JSON.
 `
-  if (model) {
-    try {
-      const result = await model.generateContent(prompt)
-      const structuredText = cleanStructuredText(result.response.text())
-      if (structuredText) return structuredText
-    } catch (error) {
-      console.error("Gemini structured text conversion failed:", error)
-    }
-  }
-
   const groqText = await convertWithGroq(prompt)
   return groqText || localFallback
 }
@@ -252,7 +221,6 @@ Return only the structured text. No markdown. No JSON.
 async function convertWithGroq(prompt) {
   const apiKey = import.meta.env.VITE_GROQ_API_KEY
   if (!apiKey) {
-    console.warn("Groq API key not set. Groq fallback disabled.")
     return null
   }
 
@@ -291,6 +259,10 @@ async function convertWithGroq(prompt) {
   }
 }
 
+async function convertJsonWithGroq(prompt) {
+  const text = await convertWithGroq(`${prompt}\n\nReturn only valid JSON.`)
+  return text ? parseJsonResponse(text) : null
+}
 function structuredTextFromFallback(result) {
   if (!result) return null
   const lines = [
@@ -316,18 +288,8 @@ function cleanStructuredText(text = "") {
     .replace(/```/g, "")
     .trim()
 }
-export async function extractWithGemini(chatText, missingFields, productCatalog) {
-  const model = getModel()
-  if (!model) return {}
-  const productNames = productCatalog.slice(0, 20).map((p) => p.name + (p.banglaName ? "/" + p.banglaName : "")).join(", ")
-  const prompt = `Extract ONLY these missing fields: ${missingFields.join(", ")}\nProducts: ${productNames}\nChat:\n${chatText}\nReturn ONLY valid JSON.`
-  try {
-    const result = await model.generateContent(prompt)
-    return parseJsonResponse(result.response.text()) || {}
-  } catch (error) {
-    console.error("Gemini extraction failed:", error)
-    return {}
-  }
+export async function extractWithAI() {
+  return {}
 }
 
 function mergeWithFallback(parsed, fallback) {
@@ -432,7 +394,7 @@ function convertBanglishFallback(chatText, productCatalog = [], zones = []) {
 }
 
 function convertBanglaDigits(value) {
-  const banglaDigits = "০১২৩৪৫৬৭৮৯"
+  const banglaDigits = "\u09e6\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee\u09ef"
   const englishDigits = "0123456789"
   return String(value).replace(/[\u09e6-\u09ef]/g, (digit) => englishDigits[banglaDigits.indexOf(digit)])
 }
@@ -457,7 +419,7 @@ function extractBanglishName(text) {
 function cleanName(name) {
   return name
     .replace(/\b(vai|bhai|apu|apa)\b/gi, "")
-    .replace(/ভাই|আপু|আপা/g, "")
+    .replace(/à¦­à¦¾à¦‡|à¦†à¦ªà§|à¦†à¦ªà¦¾/g, "")
     .replace(/\s+/g, " ")
     .trim() || null
 }
@@ -467,7 +429,7 @@ function extractBanglishAddress(text, zones) {
     /(?:ami\s+[^,\n]+,\s*)?([a-zA-Z\u0980-\u09FF\s.'-]+?)\s+(?:e|te)\s+thaki/i,
     /([a-zA-Z\u0980-\u09FF\s.'-]+?)\s+theke/i,
     /([a-zA-Z\u0980-\u09FF\s.'-]+?)\s+(?:e|te)\s+achi/i,
-    /([a-zA-Z\u0980-\u09FF\s.'-]+?)\s+তে\s+থাকি/i,
+    /([a-zA-Z\u0980-\u09FF\s.'-]+?)\s+à¦¤à§‡\s+à¦¥à¦¾à¦•à¦¿/i,
   ]
 
   for (const pattern of locationPatterns) {
@@ -483,8 +445,20 @@ function extractBanglishAddress(text, zones) {
 function extractBanglishProducts(text, productCatalog) {
   const products = []
   const lower = text.toLowerCase()
-  const quantityWords = { ekta: 1, duita: 2, tinta: 3, charta: 4, pachta: 5, একটা: 1, দুইটা: 2, তিনটা: 3 }
-  const pattern = /(\d+|ekta|duita|tinta|charta|pachta|একটা|দুইটা|তিনটা)\s*(?:ta|টা|pcs|piece|pieces|nos)?\s+([a-zA-Z\u0980-\u09FF][a-zA-Z\u0980-\u09FF'-]*)/gi
+  const quantityWords = {
+    ekta: 1,
+    duita: 2,
+    tinta: 3,
+    charta: 4,
+    pachta: 5,
+    "\u098f\u0995\u099f\u09be": 1,
+    "\u098f\u0995\u099f\u09bf": 1,
+    "\u09a6\u09c1\u0987\u099f\u09be": 2,
+    "\u09a6\u09c1\u099f\u09cb": 2,
+    "\u09a4\u09bf\u09a8\u099f\u09be": 3,
+  }
+  const quantityPattern = "(\\d+|ekta|duita|tinta|charta|pachta|\\u098f\\u0995\\u099f\\u09be|\\u098f\\u0995\\u099f\\u09bf|\\u09a6\\u09c1\\u0987\\u099f\\u09be|\\u09a6\\u09c1\\u099f\\u09cb|\\u09a4\\u09bf\\u09a8\\u099f\\u09be)"
+  const pattern = new RegExp(`${quantityPattern}\\s*(?:ta|\\u099f\\u09be|pcs|piece|pieces|nos)?\\s+([a-zA-Z\\u0980-\\u09FF][a-zA-Z\\u0980-\\u09FF'-]*)`, "gi")
   let match
 
   while ((match = pattern.exec(lower))) {
@@ -499,17 +473,16 @@ function extractBanglishProducts(text, productCatalog) {
 
   return products
 }
-
 function productMatches(product, word) {
   const values = [product.name, product.banglaName, ...(product.tags || [])].filter(Boolean).map((value) => String(value).toLowerCase())
   return values.some((value) => value.includes(word) || word.includes(value))
 }
 
 function extractPaymentMethod(lower) {
-  if (lower.includes("bkash") || lower.includes("bikash") || lower.includes("বিকাশ")) return "bKash"
-  if (lower.includes("nagad") || lower.includes("নগদ")) return "Nagad"
-  if (lower.includes("rocket") || lower.includes("রকেট")) return "Rocket"
-  if (lower.includes("bank") || lower.includes("ব্যাংক")) return "Bank"
+  if (lower.includes("bkash") || lower.includes("bikash") || lower.includes("à¦¬à¦¿à¦•à¦¾à¦¶")) return "bKash"
+  if (lower.includes("nagad") || lower.includes("à¦¨à¦—à¦¦")) return "Nagad"
+  if (lower.includes("rocket") || lower.includes("à¦°à¦•à§‡à¦Ÿ")) return "Rocket"
+  if (lower.includes("bank") || lower.includes("à¦¬à§à¦¯à¦¾à¦‚à¦•")) return "Bank"
   return "COD"
 }
 
@@ -518,6 +491,10 @@ function matchZoneName(address, zones) {
   const lower = address.toLowerCase()
   return zones.find((zone) => [zone.area, zone.banglaArea, ...(zone.keywords || [])].filter(Boolean).some((keyword) => lower.includes(String(keyword).toLowerCase())))?.area || null
 }
+
+
+
+
 
 
 

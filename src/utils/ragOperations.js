@@ -10,33 +10,23 @@ import {
 
 function isRagConfigured() {
   if (supabase) return true
-  console.warn("RAG skipped: Supabase is not configured.")
   return false
 }
 
 export async function embedAndStoreProduct(uid, product) {
   try {
-    console.log("Starting embed for product:", product?.name, "uid:", uid)
 
     if (!isRagConfigured() || !uid || !product?.id) {
-      console.error("embedAndStoreProduct missing config or required data:", {
-        supabaseConfigured: Boolean(supabase),
-        uid,
-        productId: product?.id,
-      })
       return false
     }
 
     const text = prepareProductText(product)
-    console.log("Prepared text:", text)
 
     const embedding = await generateEmbedding(text)
-    console.log("Embedding result:", embedding ? `Success (${embedding.length} dims)` : "FAILED - null returned")
 
     if (!embedding) throw new Error("Embedding generation returned null")
 
-    console.log("Saving to Supabase...")
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from("product_embeddings")
       .upsert({
         seller_uid: uid,
@@ -51,12 +41,8 @@ export async function embedAndStoreProduct(uid, product) {
         onConflict: "seller_uid,product_id",
       })
 
-    if (error) {
-      console.error("Supabase upsert error:", error.message, error.details, error.hint)
-      throw error
-    }
+    if (error) throw error
 
-    console.log("Success! Product embedded:", product.name, data)
     return true
   } catch (error) {
     console.error("embedAndStoreProduct FAILED:", error.message, error)
@@ -110,7 +96,7 @@ export async function searchProductsByVector(uid, chatText, limit = 5) {
     const queryEmbedding = await generateQueryEmbedding(queryText)
     if (!queryEmbedding) return []
 
-    const { data, error } = await supabase.rpc("match_products", {
+    const { error } = await supabase.rpc("match_products", {
       query_embedding: queryEmbedding,
       seller_uid_filter: uid,
       match_threshold: 0.5,
@@ -131,7 +117,7 @@ export async function searchZonesByVector(uid, addressText, limit = 3) {
     const queryEmbedding = await generateQueryEmbedding(addressText)
     if (!queryEmbedding) return []
 
-    const { data, error } = await supabase.rpc("match_zones", {
+    const { error } = await supabase.rpc("match_zones", {
       query_embedding: queryEmbedding,
       seller_uid_filter: uid,
       match_threshold: 0.4,
@@ -239,10 +225,12 @@ export async function syncAllZoneEmbeddings(uid, zones, onProgress) {
 
 export async function hasProductEmbeddings(uid) {
   if (!isRagConfigured() || !uid) return false
-  const { data, error } = await supabase.from("product_embeddings").select("id").eq("seller_uid", uid).limit(1)
+  const { error } = await supabase.from("product_embeddings").select("id").eq("seller_uid", uid).limit(1)
   if (error) {
     console.error("Product embedding status check failed:", error)
     return false
   }
   return Boolean(data?.length)
 }
+
+
