@@ -1,4 +1,4 @@
-﻿import { useMemo, useRef, useState } from "react"
+import { useMemo, useRef, useState } from "react"
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp } from "firebase/firestore"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
@@ -17,33 +17,33 @@ import { printInvoiceElement } from "../utils/printInvoice.js"
 import { searchProductsByVector, searchZonesByVector } from "../utils/ragOperations.js"
 import { detectZone } from "../utils/zoneDetector.js"
 
-const banglaTemplate = `à¦†à¦®à¦¾à¦¦à§‡à¦° à¦•à¦¾à¦›à§‡ à¦…à¦°à§à¦¡à¦¾à¦° à¦•à¦°à¦¤à§‡ à¦¨à¦¿à¦šà§‡à¦° à¦«à¦°à¦®à§à¦¯à¦¾à¦Ÿà§‡ à¦®à§‡à¦¸à§‡à¦œ à¦•à¦°à§à¦¨:
+const banglaTemplate = `\u0986\u09ae\u09be\u09a6\u09c7\u09b0 \u0995\u09be\u099b\u09c7 \u0985\u09b0\u09cd\u09a1\u09be\u09b0 \u0995\u09b0\u09a4\u09c7 \u09a8\u09bf\u099a\u09c7\u09b0 \u09ab\u09b0\u09ae\u09cd\u09af\u09be\u099f\u09c7 \u09ae\u09c7\u09b8\u09c7\u099c \u0995\u09b0\u09c1\u09a8:
 
-à¦¨à¦¾à¦®à¦ƒ (à¦†à¦ªà¦¨à¦¾à¦° à¦¨à¦¾à¦®)
-à¦®à§‹à¦¬à¦¾à¦‡à¦²à¦ƒ (à¦†à¦ªà¦¨à¦¾à¦° à¦¨à¦®à§à¦¬à¦°)
-à¦ à¦¿à¦•à¦¾à¦¨à¦¾à¦ƒ (à¦¸à¦®à§à¦ªà§‚à¦°à§à¦£ à¦ à¦¿à¦•à¦¾à¦¨à¦¾)
+\u09a8\u09be\u09ae\u0983 (\u0986\u09aa\u09a8\u09be\u09b0 \u09a8\u09be\u09ae)
+\u09ae\u09cb\u09ac\u09be\u0987\u09b2\u0983 (\u0986\u09aa\u09a8\u09be\u09b0 \u09a8\u09ae\u09cd\u09ac\u09b0)
+\u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983 (\u09b8\u09ae\u09cd\u09aa\u09c2\u09b0\u09cd\u09a3 \u09a0\u09bf\u0995\u09be\u09a8\u09be)
 
-à¦ªà¦£à§à¦¯à¦ƒ (à¦ªà§à¦°à¦¥à¦® à¦ªà¦£à§à¦¯à§‡à¦° à¦¨à¦¾à¦®)
-à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ (à¦¸à¦‚à¦–à§à¦¯à¦¾)
+\u09aa\u09a3\u09cd\u09af\u0983 (\u09aa\u09cd\u09b0\u09a5\u09ae \u09aa\u09a3\u09cd\u09af\u09c7\u09b0 \u09a8\u09be\u09ae)
+\u09aa\u09b0\u09bf\u09ae\u09be\u09a3\u0983 (\u09b8\u0982\u0996\u09cd\u09af\u09be)
 
-à¦ªà¦£à§à¦¯à¦ƒ (à¦¦à§à¦¬à¦¿à¦¤à§€à¦¯à¦¼ à¦ªà¦£à§à¦¯à§‡à¦° à¦¨à¦¾à¦®)
-à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ (à¦¸à¦‚à¦–à§à¦¯à¦¾)
+\u09aa\u09a3\u09cd\u09af\u0983 (\u09a6\u09cd\u09ac\u09bf\u09a4\u09c0\u09af\u09bc \u09aa\u09a3\u09cd\u09af\u09c7\u09b0 \u09a8\u09be\u09ae)
+\u09aa\u09b0\u09bf\u09ae\u09be\u09a3\u0983 (\u09b8\u0982\u0996\u09cd\u09af\u09be)
 
-à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿà¦ƒ (COD / bKash / Nagad)
-à¦¨à§‹à¦Ÿà¦ƒ (à¦¯à¦¦à¦¿ à¦¥à¦¾à¦•à§‡)
+\u09aa\u09c7\u09ae\u09c7\u09a8\u09cd\u099f\u0983 (COD / bKash / Nagad)
+\u09a8\u09cb\u099f\u0983 (\u09af\u09a6\u09bf \u09a5\u09be\u0995\u09c7)
 
-à¦‰à¦¦à¦¾à¦¹à¦°à¦£à¦ƒ
-à¦¨à¦¾à¦®à¦ƒ à¦°à¦¹à¦¿à¦® à¦®à¦¿à¦¯à¦¼à¦¾
-à¦®à§‹à¦¬à¦¾à¦‡à¦²à¦ƒ à§¦à§§à§­à§§à§¨à§©à§ªà§«à§¬à§­à§®
-à¦ à¦¿à¦•à¦¾à¦¨à¦¾à¦ƒ à¦®à¦¿à¦°à¦ªà§à¦° à§§à§¦, à¦¢à¦¾à¦•à¦¾ à§§à§¨à§§à§¬
+\u0989\u09a6\u09be\u09b9\u09b0\u09a3\u0983
+\u09a8\u09be\u09ae\u0983 \u09b0\u09b9\u09bf\u09ae \u09ae\u09bf\u09af\u09bc\u09be
+\u09ae\u09cb\u09ac\u09be\u0987\u09b2\u0983 \u09e6\u09e7\u09ed\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee
+\u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983 \u09ae\u09bf\u09b0\u09aa\u09c1\u09b0 \u09e7\u09e6, \u09a2\u09be\u0995\u09be \u09e7\u09e8\u09e7\u09ec
 
-à¦ªà¦£à§à¦¯à¦ƒ à¦¨à§€à¦² à¦¶à¦¾à¦°à§à¦Ÿ
-à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ à§¨
+\u09aa\u09a3\u09cd\u09af\u0983 \u09a8\u09c0\u09b2 \u09b6\u09be\u09b0\u09cd\u099f
+\u09aa\u09b0\u09bf\u09ae\u09be\u09a3\u0983 \u09e8
 
-à¦ªà¦£à§à¦¯à¦ƒ à¦•à¦¾à¦²à§‹ à¦ªà§à¦¯à¦¾à¦¨à§à¦Ÿ
-à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ à§§
+\u09aa\u09a3\u09cd\u09af\u0983 \u0995\u09be\u09b2\u09cb \u09aa\u09cd\u09af\u09be\u09a8\u09cd\u099f
+\u09aa\u09b0\u09bf\u09ae\u09be\u09a3\u0983 \u09e7
 
-à¦ªà§‡à¦®à§‡à¦¨à§à¦Ÿà¦ƒ Nagad`
+\u09aa\u09c7\u09ae\u09c7\u09a8\u09cd\u099f\u0983 Nagad`
 const englishTemplate = `To place an order, please message us in this format:
 
 Name: (your name)
@@ -99,12 +99,12 @@ Quantity: 1
 
 Payment: Nagad`
 const structuredPlaceholder = `Bangla:
-à¦¨à¦¾à¦®à¦ƒ à¦°à¦¹à¦¿à¦® à¦®à¦¿à¦¯à¦¼à¦¾
-à¦®à§‹à¦¬à¦¾à¦‡à¦²à¦ƒ à§¦à§§à§­à§§à§¨à§©à§ªà§«à§¬à§­à§®
-à¦ à¦¿à¦•à¦¾à¦¨à¦¾à¦ƒ à¦®à¦¿à¦°à¦ªà§à¦° à§§à§¦, à¦¢à¦¾à¦•à¦¾
+\u09a8\u09be\u09ae\u0983 \u09b0\u09b9\u09bf\u09ae \u09ae\u09bf\u09af\u09bc\u09be
+\u09ae\u09cb\u09ac\u09be\u0987\u09b2\u0983 \u09e6\u09e7\u09ed\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee
+\u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983 \u09ae\u09bf\u09b0\u09aa\u09c1\u09b0 \u09e7\u09e6, \u09a2\u09be\u0995\u09be
 
-à¦ªà¦£à§à¦¯à¦ƒ à¦¨à§€à¦² à¦¶à¦¾à¦°à§à¦Ÿ
-à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ à§¨
+\u09aa\u09a3\u09cd\u09af\u0983 \u09a8\u09c0\u09b2 \u09b6\u09be\u09b0\u09cd\u099f
+\u09aa\u09b0\u09bf\u09ae\u09be\u09a3\u0983 \u09e8
 
 English:
 Name: Rahim Mia
@@ -320,7 +320,7 @@ function ChatStage({ chatText, chatType, loadingSteps, loadingMessage, onChatCha
     toast.success("Order format copied.")
   }
 
-  return <section className="space-y-6"><div><h2 className="text-3xl font-semibold">New Order</h2><p className="text-sm text-slate-600">Choose how the customer sent the message, then paste the chat.</p></div><div className="grid gap-4 md:grid-cols-2"><ChatTypeCard active={isStructured} badge="Fast & Accurate" badgeClass="bg-emerald-100 text-emerald-800" color="green" desc="Customer followed your order format with labels like à¦¨à¦¾à¦®à¦ƒ, à¦ à¦¿à¦•à¦¾à¦¨à¦¾à¦ƒ, à¦ªà¦£à§à¦¯à¦ƒ" icon={ClipboardList} title="Structured Chat" onClick={() => onChatTypeChange("structured")} /><ChatTypeCard active={!isStructured} badge="AI Powered" badgeClass="bg-blue-100 text-blue-800" color="blue" desc="Customer sent a normal conversation message without any specific format" icon={MessageCircle} title="Unstructured Chat" onClick={() => onChatTypeChange("unstructured")} /></div><textarea className="min-h-[320px] w-full rounded-lg border border-slate-300 bg-white p-4 text-sm outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" rows={12} value={chatText} onChange={(event) => onChatChange(event.target.value)} placeholder={isStructured ? structuredPlaceholder : unstructuredPlaceholder} />{isStructured ? <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between"><p>ðŸ’¡ Share the order format with your customers for best accuracy.</p><button className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-800" type="button" onClick={copyFormat}>Copy Order Format</button></div> : <p className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">ðŸ’¡ AI will read the conversation and extract order details automatically. Works with Bangla, English and Banglish.</p>}<button className={`h-12 w-full rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${isStructured ? "bg-[#1D9E75] hover:bg-[#178765]" : "bg-blue-600 hover:bg-blue-700"}`} onClick={onParse} disabled={Boolean(loadingMessage)}>{loadingMessage && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{loadingMessage ? "Parsing..." : isStructured ? "Parse Chat" : "ðŸ¤– Parse with AI"}</button>{loadingSteps.length > 0 && <LoadingSteps steps={loadingSteps} />}</section>
+  return <section className="space-y-6"><div><h2 className="text-3xl font-semibold">New Order</h2><p className="text-sm text-slate-600">Choose how the customer sent the message, then paste the chat.</p></div><div className="grid gap-4 md:grid-cols-2"><ChatTypeCard active={isStructured} badge="Fast & Accurate" badgeClass="bg-emerald-100 text-emerald-800" color="green" desc={"Customer followed your order format with labels like \u09a8\u09be\u09ae\u0983, \u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983, \u09aa\u09a3\u09cd\u09af\u0983"} icon={ClipboardList} title="Structured Chat" onClick={() => onChatTypeChange("structured")} /><ChatTypeCard active={!isStructured} badge="AI Powered" badgeClass="bg-blue-100 text-blue-800" color="blue" desc="Customer sent a normal conversation message without any specific format" icon={MessageCircle} title="Unstructured Chat" onClick={() => onChatTypeChange("unstructured")} /></div><textarea className="min-h-[320px] w-full rounded-lg border border-slate-300 bg-white p-4 text-sm outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" rows={12} value={chatText} onChange={(event) => onChatChange(event.target.value)} placeholder={isStructured ? structuredPlaceholder : unstructuredPlaceholder} />{isStructured ? <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between"><p>Tip: Share the order format with your customers for best accuracy.</p><button className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-800" type="button" onClick={copyFormat}>Copy Order Format</button></div> : <p className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Tip: AI will read the conversation and extract order details automatically. Works with Bangla, English and Banglish.</p>}<button className={`h-12 w-full rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${isStructured ? "bg-[#1D9E75] hover:bg-[#178765]" : "bg-blue-600 hover:bg-blue-700"}`} onClick={onParse} disabled={Boolean(loadingMessage)}>{loadingMessage && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{loadingMessage ? "Parsing..." : isStructured ? "Parse Chat" : "Parse with AI"}</button>{loadingSteps.length > 0 && <LoadingSteps steps={loadingSteps} />}</section>
 }
 
 function ChatTypeCard({ active, badge, badgeClass, color, desc, icon: Icon, title, onClick }) {
@@ -365,7 +365,7 @@ function ReviewStage(props) {
         </div>
         <Textarea label="Full Address" value={order.address} onChange={(v) => onUpdate("address", v)} />
         <ZoneNotice order={order} />
-        <Select label="Zone override" value={order.zoneId} onChange={onZoneChange} options={[{ label: "Select zone", value: "" }, ...zones.map((z) => ({ label: `${z.area} - à§³${z.charge}`, value: z.id }))]} />
+        <Select label="Zone override" value={order.zoneId} onChange={onZoneChange} options={[{ label: "Select zone", value: "" }, ...zones.map((z) => ({ label: `${z.area} - ৳${z.charge}`, value: z.id }))]} />
         <Input label="Delivery Charge" type="number" value={order.deliveryCharge} onChange={(v) => onUpdate("deliveryCharge", Number(v))} />
       </Card>
 
@@ -377,7 +377,7 @@ function ReviewStage(props) {
         <SummaryLine label="Subtotal" value={subtotal} />
         <SummaryLine label="Delivery" value={order.deliveryCharge} />
         <Input label="Discount" type="number" value={order.discount} onChange={(v) => onUpdate("discount", Number(v))} />
-        <div className="border-t pt-3 text-2xl font-bold text-[#1D9E75]">GRAND TOTAL: à§³{grandTotal}</div>
+        <div className="border-t pt-3 text-2xl font-bold text-[#1D9E75]">GRAND TOTAL: ৳{grandTotal}</div>
       </Card>
 
       <PaymentSection order={order} grandTotal={grandTotal} subtotal={subtotal} paymentAmounts={paymentAmounts} onUpdate={onUpdate} />
@@ -387,17 +387,23 @@ function ReviewStage(props) {
   )
 }
 
-function ParseBadge({ parsedBy }) { if (parsedBy === "regex+rag") return <p className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800">ðŸ“‹ðŸ” Structured + RAG Search</p>; if (parsedBy === "gemini+rag") return <p className="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">ðŸ¤–ðŸ” AI + RAG Search Â· Please review all fields carefully</p>; if (parsedBy === "gemini") return <p className="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">ðŸ¤– AI Parsed Â· Please review all fields carefully</p>; if (parsedBy === "regex-fallback") return <p className="mt-2 inline-flex rounded-full bg-yellow-50 px-3 py-1 text-sm font-semibold text-yellow-800">âš ï¸ Basic Parse â€” review carefully</p>; return <p className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800">ðŸ“‹ Structured Parse</p> }
-function PaymentSection({ order, grandTotal, subtotal, paymentAmounts, onUpdate }) { return <Card title="Payment"><div className="grid gap-3 md:grid-cols-3"><PaymentCard active={order.paymentType === "full_online"} icon={CreditCard} title="Full Payment Online" desc="Customer pays everything online" onClick={() => onUpdate("paymentType", "full_online")} /><PaymentCard active={order.paymentType === "delivery_only_online"} icon={Truck} title="Delivery Charge Online Only" desc="Delivery online, product COD" onClick={() => onUpdate("paymentType", "delivery_only_online")} /><PaymentCard active={order.paymentType === "full_cod"} icon={Wallet} title="Full COD" desc="Everything paid on delivery" onClick={() => onUpdate("paymentType", "full_cod")} /></div>{order.paymentType === "full_online" && <div className="grid gap-4 md:grid-cols-3"><Select label="Payment Method" value={order.productPaymentMethod} onChange={(v) => onUpdate("productPaymentMethod", v)} options={onlineMethods.map((m) => ({ label: m, value: m }))} /><Input label="Transaction ID" value={order.productTransactionId} onChange={(v) => onUpdate("productTransactionId", v)} /><Select label="Status" value={order.productPaymentStatus} onChange={(v) => onUpdate("productPaymentStatus", v)} options={["Paid", "Unpaid", "Partial"].map((s) => ({ label: s, value: s }))} /></div>}{order.paymentType === "delivery_only_online" && <div className="grid gap-4 md:grid-cols-2"><div className="rounded-md bg-emerald-50 p-3"><h4 className="font-semibold">Delivery Payment à§³{order.deliveryCharge}</h4><Select label="Delivery Method" value={order.deliveryPaymentMethod} onChange={(v) => onUpdate("deliveryPaymentMethod", v)} options={deliveryMethods.map((m) => ({ label: m, value: m }))} /><Input label="Delivery Transaction ID" value={order.deliveryTransactionId} onChange={(v) => onUpdate("deliveryTransactionId", v)} /><Select label="Delivery Status" value={order.deliveryPaymentStatus} onChange={(v) => onUpdate("deliveryPaymentStatus", v)} options={["Paid", "Unpaid"].map((s) => ({ label: s, value: s }))} /></div><div className="rounded-md bg-slate-50 p-3"><h4 className="font-semibold">Product Payment</h4><p>Method: COD</p><p>Status: Unpaid</p><p>Amount: à§³{subtotal}</p></div></div>}{order.paymentType === "full_cod" && <p className="rounded-md bg-slate-50 p-3 font-semibold">Status: Unpaid. Amount to collect on delivery: à§³{grandTotal}</p>}<p className="rounded-md bg-[#e8f8f3] p-3 font-semibold text-[#157a5c]">Online: à§³{paymentAmounts.onlineAmount} | On Delivery: à§³{paymentAmounts.codAmount}</p></Card> }
-function ProductTable({ rows, products, onAdd, onRemove, onUpdate }) { return <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-sm"><thead><tr className="text-left"><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Remove</th></tr></thead><tbody>{rows.map((row, index) => <tr key={index}><td><select className="h-10 w-full rounded-md border px-2" value={row.productId} onChange={(e) => onUpdate(index, "productId", e.target.value)}><option value="">Select product</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></td><td><input className="h-10 w-20 rounded-md border px-2" type="number" min="1" value={row.quantity} onChange={(e) => onUpdate(index, "quantity", e.target.value)} /></td><td><input className="h-10 w-28 rounded-md border px-2" type="number" value={row.unitPrice} onChange={(e) => onUpdate(index, "unitPrice", e.target.value)} /></td><td>à§³{row.totalPrice}<MatchBadge matchedBy={row.matchedBy} /></td><td><button className="text-red-600" onClick={() => onRemove(index)}><Trash2 className="h-4 w-4" /></button></td></tr>)}</tbody></table><button className="btn-outline mt-4" onClick={onAdd}><Plus className="mr-2 inline h-4 w-4" />Add Product Row</button></div> }
+function ParseBadge({ parsedBy }) {
+  if (parsedBy === "regex+rag") return <p className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800">Structured + RAG Search</p>
+  if (parsedBy === "gemini+rag") return <p className="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">AI + RAG Search ? Please review all fields carefully</p>
+  if (parsedBy === "gemini") return <p className="mt-2 inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-800">AI Parsed ? Please review all fields carefully</p>
+  if (parsedBy === "regex-fallback") return <p className="mt-2 inline-flex rounded-full bg-yellow-50 px-3 py-1 text-sm font-semibold text-yellow-800">Basic Parse - review carefully</p>
+  return <p className="mt-2 inline-flex rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-800">Structured Parse</p>
+}
+function PaymentSection({ order, grandTotal, subtotal, paymentAmounts, onUpdate }) { return <Card title="Payment"><div className="grid gap-3 md:grid-cols-3"><PaymentCard active={order.paymentType === "full_online"} icon={CreditCard} title="Full Payment Online" desc="Customer pays everything online" onClick={() => onUpdate("paymentType", "full_online")} /><PaymentCard active={order.paymentType === "delivery_only_online"} icon={Truck} title="Delivery Charge Online Only" desc="Delivery online, product COD" onClick={() => onUpdate("paymentType", "delivery_only_online")} /><PaymentCard active={order.paymentType === "full_cod"} icon={Wallet} title="Full COD" desc="Everything paid on delivery" onClick={() => onUpdate("paymentType", "full_cod")} /></div>{order.paymentType === "full_online" && <div className="grid gap-4 md:grid-cols-3"><Select label="Payment Method" value={order.productPaymentMethod} onChange={(v) => onUpdate("productPaymentMethod", v)} options={onlineMethods.map((m) => ({ label: m, value: m }))} /><Input label="Transaction ID" value={order.productTransactionId} onChange={(v) => onUpdate("productTransactionId", v)} /><Select label="Status" value={order.productPaymentStatus} onChange={(v) => onUpdate("productPaymentStatus", v)} options={["Paid", "Unpaid", "Partial"].map((s) => ({ label: s, value: s }))} /></div>}{order.paymentType === "delivery_only_online" && <div className="grid gap-4 md:grid-cols-2"><div className="rounded-md bg-emerald-50 p-3"><h4 className="font-semibold">Delivery Payment ৳{order.deliveryCharge}</h4><Select label="Delivery Method" value={order.deliveryPaymentMethod} onChange={(v) => onUpdate("deliveryPaymentMethod", v)} options={deliveryMethods.map((m) => ({ label: m, value: m }))} /><Input label="Delivery Transaction ID" value={order.deliveryTransactionId} onChange={(v) => onUpdate("deliveryTransactionId", v)} /><Select label="Delivery Status" value={order.deliveryPaymentStatus} onChange={(v) => onUpdate("deliveryPaymentStatus", v)} options={["Paid", "Unpaid"].map((s) => ({ label: s, value: s }))} /></div><div className="rounded-md bg-slate-50 p-3"><h4 className="font-semibold">Product Payment</h4><p>Method: COD</p><p>Status: Unpaid</p><p>Amount: ৳{subtotal}</p></div></div>}{order.paymentType === "full_cod" && <p className="rounded-md bg-slate-50 p-3 font-semibold">Status: Unpaid. Amount to collect on delivery: ৳{grandTotal}</p>}<p className="rounded-md bg-[#e8f8f3] p-3 font-semibold text-[#157a5c]">Online: ৳{paymentAmounts.onlineAmount} | On Delivery: ৳{paymentAmounts.codAmount}</p></Card> }
+function ProductTable({ rows, products, onAdd, onRemove, onUpdate }) { return <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-sm"><thead><tr className="text-left"><th>Product</th><th>Qty</th><th>Unit Price</th><th>Total</th><th>Remove</th></tr></thead><tbody>{rows.map((row, index) => <tr key={index}><td><select className="h-10 w-full rounded-md border px-2" value={row.productId} onChange={(e) => onUpdate(index, "productId", e.target.value)}><option value="">Select product</option>{products.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}</select></td><td><input className="h-10 w-20 rounded-md border px-2" type="number" min="1" value={row.quantity} onChange={(e) => onUpdate(index, "quantity", e.target.value)} /></td><td><input className="h-10 w-28 rounded-md border px-2" type="number" value={row.unitPrice} onChange={(e) => onUpdate(index, "unitPrice", e.target.value)} /></td><td>৳{row.totalPrice}<MatchBadge matchedBy={row.matchedBy} /></td><td><button className="text-red-600" onClick={() => onRemove(index)}><Trash2 className="h-4 w-4" /></button></td></tr>)}</tbody></table><button className="btn-outline mt-4" onClick={onAdd}><Plus className="mr-2 inline h-4 w-4" />Add Product Row</button></div> }
 function MatchBadge({ matchedBy }) { const label = matchedBy === "productCode" ? "Code Match" : matchedBy === "rag" || matchedBy === "fuzzy" ? "AI Match" : "Manual"; const tone = matchedBy === "productCode" ? "bg-emerald-50 text-emerald-800" : matchedBy === "manual" ? "bg-slate-100 text-slate-700" : "bg-blue-50 text-blue-800"; return <span className={`ml-2 rounded-full px-2 py-0.5 text-[10px] font-semibold ${tone}`}>{label}</span> }
 function PaymentCard({ active, icon: Icon, title, desc, onClick }) { return <button className={`rounded-lg border p-4 text-left ${active ? "border-[#1D9E75] bg-emerald-50" : "border-slate-200 bg-white"}`} onClick={onClick}><Icon className="mb-2 h-5 w-5 text-[#1D9E75]" /><p className="font-semibold">{title}</p><p className="text-xs text-slate-600">{desc}</p></button> }
-function ZoneNotice({ order }) { if (!order.zone) return <p className="rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-800">Could not detect zone â€” please select manually</p>; if (order.zoneIsFallback) return <p className="rounded-md bg-yellow-50 px-3 py-2 text-sm font-semibold text-yellow-800">No specific area detected â€” defaulting to {order.zone} (à§³{order.deliveryCharge}). Please verify.</p>; if (order.zoneDetectionMethod === "rag") return <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">Auto-detected via AI: {order.zone} (à§³{order.deliveryCharge}){order.zoneSimilarity ? ` â€” ${Math.round(order.zoneSimilarity * 100)}% match` : ""}</p>; return <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">Auto-detected: {order.zone} (à§³{order.deliveryCharge})</p> }
+function ZoneNotice({ order }) { if (!order.zone) return <p className="rounded-md bg-orange-50 px-3 py-2 text-sm font-semibold text-orange-800">Could not detect zone - please select manually</p>; if (order.zoneIsFallback) return <p className="rounded-md bg-yellow-50 px-3 py-2 text-sm font-semibold text-yellow-800">No specific area detected - defaulting to {order.zone} (৳{order.deliveryCharge}). Please verify.</p>; if (order.zoneDetectionMethod === "rag") return <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">Auto-detected via AI: {order.zone} (৳{order.deliveryCharge}){order.zoneSimilarity ? ` - ${Math.round(order.zoneSimilarity * 100)}% match` : ""}</p>; return <p className="rounded-md bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-800">Auto-detected: {order.zone} (৳{order.deliveryCharge})</p> }
 function Card({ title, children }) { return <div className="card space-y-4"><h3 className="text-lg font-semibold">{title}</h3>{children}</div> }
 function Input({ label, value, onChange, type = "text" }) { return <label className="block"><span className="text-sm font-medium">{label}</span><input className="mt-2 h-11 w-full rounded-md border border-slate-300 px-3" type={type} value={value} onChange={(e) => onChange(e.target.value)} /></label> }
 function Textarea({ label, value, onChange }) { return <label className="block"><span className="text-sm font-medium">{label}</span><textarea className="mt-2 min-h-24 w-full rounded-md border border-slate-300 px-3 py-2" value={value} onChange={(e) => onChange(e.target.value)} /></label> }
 function Select({ label, value, options, onChange }) { return <label className="block"><span className="text-sm font-medium">{label}</span><select className="mt-2 h-11 w-full rounded-md border border-slate-300 px-3" value={value} onChange={(e) => onChange(e.target.value)}>{options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}</select></label> }
-function SummaryLine({ label, value }) { return <p className="flex justify-between text-sm"><span>{label}</span><span className="font-semibold">à§³{value}</span></p> }
+function SummaryLine({ label, value }) { return <p className="flex justify-between text-sm"><span>{label}</span><span className="font-semibold">৳{value}</span></p> }
 async function fetchSellerData(uid) { const [productsSnapshot, zonesSnapshot, shopSnapshot] = await Promise.all([getDocs(collection(db, "users", uid, "products")), getDocs(collection(db, "users", uid, "deliveryZones")), getDoc(doc(db, "users", uid, "settings", "shop"))]); return [productsSnapshot.docs.map((item) => ({ id: item.id, ...item.data() })), zonesSnapshot.docs.map((item) => ({ id: item.id, ...item.data() })), shopSnapshot.data() || {}] }
 function buildProductRow(name, quantity, catalog) { const match = fuzzyMatchSingle(name, catalog); return { productId: match?.id || "", productCode: match?.productCode || "", productName: match?.name || name || "", banglaName: match?.banglaName || "", quantity: Number(quantity || 1), unitPrice: match?.price || 0, costPrice: match?.costPrice || 0, totalPrice: (match?.price || 0) * Number(quantity || 1), matchedBy: match?.productCode && String(name || "").toUpperCase().includes(String(match.productCode).toUpperCase()) ? "productCode" : match ? "fuzzy" : "manual" } }
 function buildProductRowFromRag(pair, ragProducts, catalog) { const quantity = Number(pair.quantity || 1); const productName = String(pair.productName || "").toLowerCase(); const ragMatch = ragProducts.find((item) => item.similarity > 0.6 && (String(item.product_name || "").toLowerCase().includes(productName) || productName.includes(String(item.product_name || "").toLowerCase()))) || ragProducts[0]; if (!ragMatch) return buildProductRow(pair.productName, quantity, catalog); const unitPrice = Number(ragMatch.price || 0); return { productId: ragMatch.product_id || "", productCode: ragMatch.product_code || "", productName: ragMatch.product_name || pair.productName || "", banglaName: ragMatch.bangla_name || "", quantity, unitPrice, costPrice: Number(ragMatch.cost_price || 0), totalPrice: unitPrice * quantity, ragSimilarity: ragMatch.similarity || 0, matchedBy: "rag" } }

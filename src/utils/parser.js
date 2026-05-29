@@ -1,23 +1,23 @@
-﻿import { fuzzyMatchSingle, matchProducts } from "./fuzzyMatcher.js"
+import { fuzzyMatchSingle, matchProducts } from "./fuzzyMatcher.js"
 import { detectZone } from "./zoneDetector.js"
 
 export function convertBanglaToEnglish(str = "") {
-  const banglaDigits = "à§¦à§§à§¨à§©à§ªà§«à§¬à§­à§®à§¯"
+  const banglaDigits = "\u09e6\u09e7\u09e8\u09e9\u09ea\u09eb\u09ec\u09ed\u09ee\u09ef"
   const englishDigits = "0123456789"
-  return String(str).replace(/[à§¦-à§¯]/g, (d) => englishDigits[banglaDigits.indexOf(d)])
+  return String(str).replace(/[\u09e6-\u09ef]/g, (d) => englishDigits[banglaDigits.indexOf(d)])
 }
 
 const phoneRegex = /(?:\+?88)?01[3-9]\d{8}/g
-const nameTriggers = ["à¦¨à¦¾à¦®à¦ƒ", "à¦¨à¦¾à¦®:", "à¦¨à¦¾à¦® :", "name:", "Name:", "name :", "customer:", "customer :", "nam:", "nam :", "buyer:", "amar nam:", "amar name:"]
-const addressTriggers = ["à¦ à¦¿à¦•à¦¾à¦¨à¦¾à¦ƒ", "à¦ à¦¿à¦•à¦¾à¦¨à¦¾:", "à¦ à¦¿à¦•à¦¾à¦¨à¦¾ :", "address:", "Address:", "address :", "thikana:", "thikana :", "deliver to:", "delivery address:"]
-const phoneTriggers = ["à¦®à§‹à¦¬à¦¾à¦‡à¦²à¦ƒ", "à¦®à§‹à¦¬à¦¾à¦‡à¦²:", "mobile:", "Mobile:", "mobile :", "phone:", "phone :", "à¦¨à¦®à§à¦¬à¦°à¦ƒ", "à¦¨à¦¾à¦®à§à¦¬à¦¾à¦°à¦ƒ", "number:", "number :", "contact:", "contact :"]
-const itemTriggers = ["à¦†à¦‡à¦Ÿà§‡à¦®à¦ƒ", "à¦†à¦‡à¦Ÿà§‡à¦®:", "item:", "Item:", "item :", "items:", "à¦ªà¦£à§à¦¯à¦ƒ", "à¦ªà¦£à§à¦¯:", "product:", "Product:", "product :", "ponno:", "ponno :", "order:", "order :", "lagbe:", "à¦²à¦¾à¦—à¦¬à§‡à¦ƒ", "à¦²à¦¾à¦—à¦¬à§‡:"]
-const quantityTriggers = ["à¦ªà¦°à¦¿à¦®à¦¾à¦£à¦ƒ", "à¦ªà¦°à¦¿à¦®à¦¾à¦£:", "à¦ªà¦°à¦¿à¦®à¦¾à¦£ :", "quantity:", "Quantity:", "quantity :", "qty:", "Qty:", "qty :", "poriman:", "poriman :", "à¦ªà¦¿à¦¸à¦ƒ", "à¦ªà¦¿à¦¸:"]
-const noteTriggers = ["note:", "Note:", "à¦¬à¦¿à¦¶à§‡à¦·:", "special:", "important:", "please note:", "instruction:"]
+const nameTriggers = ["\u09a8\u09be\u09ae\u0983", "\u09a8\u09be\u09ae:", "\u09a8\u09be\u09ae :", "name:", "Name:", "name :", "customer:", "customer :", "nam:", "nam :", "buyer:", "amar nam:", "amar name:"]
+const addressTriggers = ["\u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983", "\u09a0\u09bf\u0995\u09be\u09a8\u09be:", "\u09a0\u09bf\u0995\u09be\u09a8\u09be :", "address:", "Address:", "address :", "thikana:", "thikana :", "deliver to:", "delivery address:"]
+const phoneTriggers = ["\u09ae\u09cb\u09ac\u09be\u0987\u09b2\u0983", "\u09ae\u09cb\u09ac\u09be\u0987\u09b2:", "mobile:", "Mobile:", "mobile :", "phone:", "phone :", "\u09a8\u09ae\u09cd\u09ac\u09b0\u0983", "\u09a8\u09be\u09ae\u09cd\u09ac\u09be\u09b0\u0983", "number:", "number :", "contact:", "contact :"]
+const itemTriggers = ["\u0986\u0987\u099f\u09c7\u09ae\u0983", "\u0986\u0987\u099f\u09c7\u09ae:", "item:", "Item:", "item :", "items:", "\u09aa\u09a3\u09cd\u09af\u0983", "\u09aa\u09a3\u09cd\u09af:", "product:", "Product:", "product :", "ponno:", "ponno :", "order:", "order :", "lagbe:", "\u09b2\u09be\u0997\u09ac\u09c7\u0983", "\u09b2\u09be\u0997\u09ac\u09c7:"]
+const quantityTriggers = ["\u09aa\u09b0\u09bf\u09ae\u09be\u09a3\u0983", "\u09aa\u09b0\u09bf\u09ae\u09be\u09a3:", "\u09aa\u09b0\u09bf\u09ae\u09be\u09a3 :", "quantity:", "Quantity:", "quantity :", "qty:", "Qty:", "qty :", "poriman:", "poriman :", "\u09aa\u09bf\u09b8\u0983", "\u09aa\u09bf\u09b8:"]
+const noteTriggers = ["note:", "Note:", "\u09ac\u09bf\u09b6\u09c7\u09b7:", "special:", "important:", "please note:", "instruction:"]
 const addressWords = ["road", "lane", "street", "village", "gram", "para", "ward", "union", "upazila", "thana", "district", "house", "flat", "floor", "building", "tower", "bazar", "north", "south", "east", "west", "uttar", "dakkhin", "purbo", "paschim"]
 
-const quantityMap = { ekta: 1, "à¦à¦•à¦Ÿà¦¾": 1, "à¦à¦•à¦Ÿà¦¿": 1, duita: 2, "à¦¦à§à¦‡à¦Ÿà¦¾": 2, "à¦¦à§à¦Ÿà§‹": 2, tinta: 3, "à¦¤à¦¿à¦¨à¦Ÿà¦¾": 3, charta: 4, "à¦šà¦¾à¦°à¦Ÿà¦¾": 4, pachta: 5, "à¦ªà¦¾à¦à¦šà¦Ÿà¦¾": 5, chota: 6, "à¦›à¦¯à¦¼à¦Ÿà¦¾": 6, satta: 7, "à¦¸à¦¾à¦¤à¦Ÿà¦¾": 7, atta: 8, "à¦†à¦Ÿà¦Ÿà¦¾": 8, nota: 9, "à¦¨à¦¯à¦¼à¦Ÿà¦¾": 9, dosta: 10, "à¦¦à¦¶à¦Ÿà¦¾": 10 }
-const paymentKeywords = { bkash: "bKash", "à¦¬à¦¿à¦•à¦¾à¦¶": "bKash", bikash: "bKash", nagad: "Nagad", "à¦¨à¦—à¦¦": "Nagad", rocket: "Rocket", "à¦°à¦•à§‡à¦Ÿ": "Rocket", bank: "Bank", "à¦¬à§à¦¯à¦¾à¦‚à¦•": "Bank", cash: "COD", "à¦•à§à¦¯à¦¾à¦¶": "COD", cod: "COD", upay: "uPay", cellfin: "Other" }
+const quantityMap = { ekta: 1, "\u098f\u0995\u099f\u09be": 1, "\u098f\u0995\u099f\u09bf": 1, duita: 2, "\u09a6\u09c1\u0987\u099f\u09be": 2, "\u09a6\u09c1\u099f\u09cb": 2, tinta: 3, "\u09a4\u09bf\u09a8\u099f\u09be": 3, charta: 4, "\u099a\u09be\u09b0\u099f\u09be": 4, pachta: 5, "\u09aa\u09be\u0981\u099a\u099f\u09be": 5, chota: 6, "\u099b\u09af\u09bc\u099f\u09be": 6, satta: 7, "\u09b8\u09be\u09a4\u099f\u09be": 7, atta: 8, "\u0986\u099f\u099f\u09be": 8, nota: 9, "\u09a8\u09af\u09bc\u099f\u09be": 9, dosta: 10, "\u09a6\u09b6\u099f\u09be": 10 }
+const paymentKeywords = { bkash: "bKash", "\u09ac\u09bf\u0995\u09be\u09b6": "bKash", bikash: "bKash", nagad: "Nagad", "\u09a8\u0997\u09a6": "Nagad", rocket: "Rocket", "\u09b0\u0995\u09c7\u099f": "Rocket", bank: "Bank", "\u09ac\u09cd\u09af\u09be\u0982\u0995": "Bank", cash: "COD", "\u0995\u09cd\u09af\u09be\u09b6": "COD", cod: "COD", upay: "uPay", cellfin: "Other" }
 
 export function parseProductQuantityPairs(chatText = "") {
   const lines = chatText.split("\n").map((line) => line.trim())
@@ -109,7 +109,7 @@ function extractAfterAnyTrigger(line, triggers) {
   for (const trigger of triggers) {
     const escaped = escapeRegExp(trigger.trim())
     const match = trimmed.match(new RegExp(`^\\s*${escaped}\\s*(.*)$`, "i"))
-    if (match?.[1]) return match[1].replace(/^[:à¦ƒ\s]+/, "").trim() || null
+    if (match?.[1]) return match[1].replace(/^[:ঃ\s]+/, "").trim() || null
   }
   return null
 }
@@ -158,7 +158,7 @@ export function extractPhone(text = "") {
 export function extractQuantity(text = "") {
   const lower = convertBanglaToEnglish(text).toLowerCase()
   for (const [word, quantity] of Object.entries(quantityMap)) if (lower.includes(convertBanglaToEnglish(word).toLowerCase())) return quantity
-  const unitMatch = lower.match(/(\d+)\s*(ta|à¦Ÿà¦¾|pcs|piece|pieces|à¦ªà¦¿à¦›|à¦ªà¦¿à¦¸|nos|number|set|packet|pack|box)/i)
+  const unitMatch = lower.match(/(\d+)\s*(ta|\u099f\u09be|pcs|piece|pieces|\u09aa\u09bf\u099b|\u09aa\u09bf\u09b8|nos|number|set|packet|pack|box)/i)
   if (unitMatch) return Number(unitMatch[1])
   const xPrefix = lower.match(/x\s*(\d+)/i)
   if (xPrefix) return Number(xPrefix[1])

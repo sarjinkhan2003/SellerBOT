@@ -591,7 +591,7 @@ function ProfitPreview({ price, costPrice }) {
   const cost = Number(costPrice || 0)
   const profit = selling - cost
   const margin = selling > 0 ? ((profit / selling) * 100).toFixed(1) : "0.0"
-  return <p className={`rounded-md px-3 py-2 text-sm font-semibold ${profit >= 0 ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>Profit per unit: à§³{profit || 0} ({margin}%)</p>
+  return <p className={`rounded-md px-3 py-2 text-sm font-semibold ${profit >= 0 ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"}`}>Profit per unit: ৳{profit || 0} ({margin}%)</p>
 }
 
 function Field({ label, name, value, onChange, type = "text", helper, ...props }) {

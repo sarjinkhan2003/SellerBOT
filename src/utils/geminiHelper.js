@@ -1,9 +1,9 @@
 ﻿export async function convertToStructured(chatText, productCatalog = [], zones = [], ragProducts = [], ragZones = []) {
   const productList = ragProducts.length > 0
-    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (à§³${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join(", ")
-    : productCatalog.slice(0, 15).map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""} (à§³${p.price})`).join(", ")
+    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (৳${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join(", ")
+    : productCatalog.slice(0, 15).map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""} (৳${p.price})`).join(", ")
   const zoneList = ragZones.length > 0
-    ? ragZones.map((z) => `${z.area} (à§³${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
+    ? ragZones.map((z) => `${z.area} (৳${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
     : zones.map((z) => z.area).join(", ")
   const prompt = `
 You are SellerBot's order pre-processor for Bangladeshi F-commerce sellers.
@@ -110,10 +110,10 @@ export async function convertToStructuredText(chatText, productCatalog = [], zon
   const localFallback = structuredTextFromFallback(convertBanglishFallback(chatText, productCatalog, zones))
 
   const productList = ragProducts.length > 0
-    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (à§³${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join("\n")
+    ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (৳${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join("\n")
     : productCatalog.slice(0, 15).map((p) => `${p.name}${p.banglaName ? "/" + p.banglaName : ""}${p.tags?.length ? " (tags: " + p.tags.join(", ") + ")" : ""}`).join("\n")
   const zoneList = ragZones.length > 0
-    ? ragZones.map((z) => `${z.area}${z.bangla_area ? "/" + z.bangla_area : ""} (à§³${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
+    ? ragZones.map((z) => `${z.area}${z.bangla_area ? "/" + z.bangla_area : ""} (৳${z.charge}) [${Math.round((z.similarity || 0) * 100)}% match]`).join(", ")
     : zones.slice(0, 15).map((z) => `${z.area}${z.banglaArea ? "/" + z.banglaArea : ""}`).join(", ")
 
   const prompt = `
