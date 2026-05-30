@@ -137,7 +137,9 @@ const unstructuredSteps = ["AI is reading the conversation...", "Extracting cust
 function NewOrder() {
   const { currentUser } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const invoiceRef = useRef(null)
+  const manualAutoOpenedRef = useRef(false)
   const [stage, setStage] = useState(1)
   const [chatType, setChatType] = useState(() => searchParams.get("mode") === "manual" ? "manual" : "structured")
   const [chatText, setChatText] = useState("")
