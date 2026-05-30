@@ -13,6 +13,7 @@ import Dashboard from "./pages/Dashboard.jsx"
 import AIUsage from "./pages/AIUsage.jsx"
 import DeliveryInventory from "./pages/DeliveryInventory.jsx"
 import DeliveryZones from "./pages/DeliveryZones.jsx"
+import Docs from "./pages/Docs.jsx"
 import Login from "./pages/Login.jsx"
 import NewOrder from "./pages/NewOrder.jsx"
 import Orders from "./pages/Orders.jsx"
@@ -109,6 +110,7 @@ function App() {
               <Routes>
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/docs" element={<Docs />} />
                 <Route
                   element={
                     <ProtectedRoute>

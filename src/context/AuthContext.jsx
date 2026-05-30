@@ -27,6 +27,8 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     if (authLoading) return undefined
 
+    const isPublicDocsRoute = location.pathname === "/docs"
+
     if (!currentUser) {
       setShopSetupComplete(false)
       setCheckingShop(false)
@@ -44,7 +46,7 @@ export function AuthProvider({ children }) {
         setShopSetupComplete(hasShop)
         setCheckingShop(false)
 
-        if (!hasShop && location.pathname !== "/register") {
+        if (!hasShop && location.pathname !== "/register" && !isPublicDocsRoute) {
           navigate("/register", { replace: true })
         }
 
@@ -57,7 +59,7 @@ export function AuthProvider({ children }) {
         setShopSetupComplete(false)
         setCheckingShop(false)
 
-        if (location.pathname !== "/register") {
+        if (location.pathname !== "/register" && !isPublicDocsRoute) {
           navigate("/register", { replace: true })
         }
       })

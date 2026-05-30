@@ -86,6 +86,7 @@ function Login() {
 
           <div className="my-6 flex items-center gap-3 text-xs font-semibold uppercase" style={{ color: "var(--text-tertiary)" }}><span className="h-px flex-1 bg-[var(--border)]" />or<span className="h-px flex-1 bg-[var(--border)]" /></div>
           <Link className="btn-outline btn-full" to="/register">{t("auth.register")}</Link>
+          <Link className="btn-secondary btn-full mt-3" to="/docs">View Docs & Pitch Deck</Link>
 
           <p className="mt-6 text-center text-xs font-semibold" style={{ color: "var(--text-tertiary)" }}>Developed by Team ParityCode.</p>
 
