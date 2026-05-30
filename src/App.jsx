@@ -12,6 +12,7 @@ import DeliveryInventory from "./pages/DeliveryInventory.jsx"
 import DeliveryZones from "./pages/DeliveryZones.jsx"
 import Login from "./pages/Login.jsx"
 import NewOrder from "./pages/NewOrder.jsx"
+import Orders from "./pages/Orders.jsx"
 import Products from "./pages/Products.jsx"
 import Register from "./pages/Register.jsx"
 import Sales from "./pages/Sales.jsx"
@@ -52,6 +53,7 @@ function App() {
                   <Route path="/delivery-inventory" element={<DeliveryInventory />} />
                   <Route path="/shop-settings" element={<ShopSettings />} />
                   <Route path="/new-order" element={<NewOrder />} />
+                  <Route path="/orders" element={<Orders />} />
                   <Route path="/sales" element={<Sales />} />
                 </Route>
               </Routes>

@@ -157,19 +157,19 @@ function NewOrder() {
   const paymentAmounts = getPaymentAmounts(order.paymentType, subtotal, Number(order.deliveryCharge || 0), grandTotal)
   const enrichedOrder = { ...order, ...getLegacyPaymentFields(order), chatType, subtotal, grandTotal, productRevenue: subtotal, deliveryRevenue: Number(order.deliveryCharge || 0), grossRevenue: grandTotal, totalCost, grossProfit: subtotal - totalCost, profitMargin: subtotal > 0 ? (((subtotal - totalCost) / subtotal) * 100).toFixed(1) : "0.0", onlineAmount: paymentAmounts.onlineAmount, codAmount: paymentAmounts.codAmount, parsedBy }
   const setStep = (index) => {
-    const source = chatType === "structured" ? structuredSteps : unstructuredSteps
+    const source = chatType === "manual" ? manualSteps : chatType === "structured" ? structuredSteps : unstructuredSteps
     setLoadingMessage(source[index] || "")
     setLoadingSteps(source.map((label, stepIndex) => ({ label, status: stepIndex < index ? "done" : stepIndex === index ? "current" : "pending" })))
   }
 
   const completeSteps = () => {
-    const source = chatType === "structured" ? structuredSteps : unstructuredSteps
+    const source = chatType === "manual" ? manualSteps : chatType === "structured" ? structuredSteps : unstructuredSteps
     setLoadingMessage("Done!")
     setLoadingSteps(source.map((label) => ({ label, status: "done" })))
   }
 
   const handleParseChat = async () => {
-    if (!chatText.trim()) {
+    if (chatType !== "manual" && !chatText.trim()) {
       toast.error("Please paste a customer chat first")
       return
     }
@@ -180,6 +180,16 @@ function NewOrder() {
       setProducts(loadedProducts)
       setZones(loadedZones)
       setShop(loadedShop)
+
+      if (chatType === "manual") {
+        setStep(1)
+        setOrder(createEmptyOrder())
+        setParsedBy("manual")
+        completeSteps()
+        setStage(2)
+        return
+      }
+
       let parsedResult = null
 
       if (chatType === "structured") {
@@ -307,7 +317,7 @@ function NewOrder() {
   const handlePDFDownload = async () => { const canvas = await html2canvas(invoiceRef.current, { scale: 2 }); const pdf = new jsPDF("p", "mm", "a4"); const width = pdf.internal.pageSize.getWidth(); pdf.addImage(canvas.toDataURL("image/png"), "PNG", 0, 0, width, (canvas.height * width) / canvas.width); pdf.save(`SellerBot-Invoice-${orderNumber}.pdf`) }
   const handleImageDownload = async () => { const canvas = await html2canvas(invoiceRef.current, { scale: 2 }); const link = document.createElement("a"); link.download = `SellerBot-Invoice-${orderNumber}.png`; link.href = canvas.toDataURL("image/png"); link.click() }
   const handlePrintInvoice = async () => { await printInvoiceElement(invoiceRef.current) }
-  const saveSale = async () => { try { setSaving(true); const confirmedOrder = { ...enrichedOrder, orderNumber, invoiceURL: "" }; const docRef = await addDoc(collection(db, "users", currentUser.uid, "orders"), { ...confirmedOrder, createdAt: serverTimestamp() }); const inventoryResult = await moveToDeliveryInventory(currentUser.uid, { ...confirmedOrder, id: docRef.id }); if (inventoryResult.success) toast.success("Order saved! Stock updated."); else { toast.success("Order saved!"); toast.error("Stock update failed - check inventory."); } navigate("/sales") } catch (error) { toast.error(error.message || "Could not save order.") } finally { setSaving(false) } }
+  const saveSale = async () => { try { setSaving(true); const confirmedOrder = { ...enrichedOrder, orderNumber, invoiceURL: "" }; const docRef = await addDoc(collection(db, "users", currentUser.uid, "orders"), { ...confirmedOrder, createdAt: serverTimestamp() }); const inventoryResult = await moveToDeliveryInventory(currentUser.uid, { ...confirmedOrder, id: docRef.id }); if (inventoryResult.success) toast.success("Order saved! Stock updated."); else { toast.success("Order saved!"); toast.error("Stock update failed - check inventory."); } navigate("/orders") } catch (error) { toast.error(error.message || "Could not save order.") } finally { setSaving(false) } }
 
   if (stage === 1) return <ChatStage chatText={chatText} chatType={chatType} loadingSteps={loadingSteps} loadingMessage={loadingMessage} onChatChange={setChatText} onChatTypeChange={setChatType} onParse={handleParseChat} />
   if (stage === 2) return <ReviewStage order={order} products={products} zones={zones} subtotal={subtotal} grandTotal={grandTotal} paymentAmounts={paymentAmounts} parsedBy={parsedBy} onAddProduct={addProductRow} onBack={() => setStage(1)} onGenerate={handleGenerateInvoice} onProductRemove={removeProductRow} onProductUpdate={updateProductRow} onUpdate={updateOrder} onZoneChange={updateZone} />
@@ -317,17 +327,19 @@ function NewOrder() {
 function ChatStage({ chatText, chatType, loadingSteps, loadingMessage, onChatChange, onChatTypeChange, onParse }) {
   const { t } = useTranslation()
   const isStructured = chatType === "structured"
+  const isUnstructured = chatType === "unstructured"
+  const isManual = chatType === "manual"
   const copyFormat = async () => {
     await navigator.clipboard.writeText(`${banglaTemplate}\n\n--- ENGLISH ---\n\n${englishTemplate}\n\n--- BANGLISH ---\n\n${banglishTemplate}`)
     toast.success("Order format copied.")
   }
 
-  return <section className="space-y-6"><div><h2 className="text-3xl font-semibold">{t("order.title")}</h2><p className="text-sm text-slate-600">{t("order.subtitle", { defaultValue: "Choose how the customer sent the message, then paste the chat." })}</p></div><div className="grid gap-4 md:grid-cols-2"><ChatTypeCard active={isStructured} badge="Fast & Accurate" badgeClass="bg-emerald-100 text-emerald-800" color="green" desc={"Customer followed your order format with labels like \u09a8\u09be\u09ae\u0983, \u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983, \u09aa\u09a3\u09cd\u09af\u0983"} icon={ClipboardList} title={t("order.structuredChat")} onClick={() => onChatTypeChange("structured")} /><ChatTypeCard active={!isStructured} badge="AI Powered" badgeClass="bg-blue-100 text-blue-800" color="blue" desc={t("order.unstructuredDesc")} icon={MessageCircle} title={t("order.unstructuredChat")} onClick={() => onChatTypeChange("unstructured")} /></div><textarea className="min-h-[320px] w-full rounded-lg border border-slate-300 bg-white p-4 text-sm outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" rows={12} value={chatText} onChange={(event) => onChatChange(event.target.value)} placeholder={isStructured ? structuredPlaceholder : unstructuredPlaceholder} />{isStructured ? <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between"><p>Tip: Share the order format with your customers for best accuracy.</p><button className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-800" type="button" onClick={copyFormat}>{t("order.copyTemplate")}</button></div> : <p className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Tip: AI will read the conversation and extract order details automatically. Works with Bangla, English and Banglish.</p>}<button className={`h-12 w-full rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${isStructured ? "bg-[#1D9E75] hover:bg-[#178765]" : "bg-blue-600 hover:bg-blue-700"}`} onClick={onParse} disabled={Boolean(loadingMessage)}>{loadingMessage && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{loadingMessage ? "Parsing..." : isStructured ? t("order.parseChat") : t("order.parseWithAI")}</button>{loadingSteps.length > 0 && <LoadingSteps steps={loadingSteps} />}</section>
+  return <section className="space-y-6"><div><h2 className="text-3xl font-semibold">{t("order.title")}</h2><p className="text-sm text-slate-600">{t("order.subtitle", { defaultValue: "Choose chat parsing or create an invoice manually." })}</p></div><div className="grid gap-4 lg:grid-cols-3"><ChatTypeCard active={isStructured} badge="Fast & Accurate" badgeClass="bg-emerald-100 text-emerald-800" color="green" desc="Customer followed your order format with labels like name, address, product" icon={ClipboardList} title={t("order.structuredChat")} onClick={() => onChatTypeChange("structured")} /><ChatTypeCard active={isUnstructured} badge="AI Powered" badgeClass="bg-blue-100 text-blue-800" color="blue" desc={t("order.unstructuredDesc")} icon={MessageCircle} title={t("order.unstructuredChat")} onClick={() => onChatTypeChange("unstructured")} /><ChatTypeCard active={isManual} badge="Manual" badgeClass="bg-purple-100 text-purple-800" color="purple" desc="Create an invoice by typing customer and product details yourself." icon={ClipboardList} title="Manual Invoice" onClick={() => onChatTypeChange("manual")} /></div>{!isManual && <textarea className="min-h-[320px] w-full rounded-lg border border-slate-300 bg-white p-4 text-sm outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" rows={12} value={chatText} onChange={(event) => onChatChange(event.target.value)} placeholder={isStructured ? structuredPlaceholder : unstructuredPlaceholder} />}{isManual ? <div className="card border-purple-200 bg-purple-50 text-sm text-purple-900"><p className="font-semibold">Manual invoice mode</p><p className="mt-1">Use this for phone orders, walk-in orders, or any invoice that does not start from chat parsing.</p></div> : isStructured ? <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between"><p>Tip: Share the order format with your customers for best accuracy.</p><button className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-800" type="button" onClick={copyFormat}>{t("order.copyTemplate")}</button></div> : <p className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Tip: AI will read the conversation and extract order details automatically. Works with Bangla, English and Banglish.</p>}<button className={`h-12 w-full rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${isStructured || isManual ? "bg-[#1D9E75] hover:bg-[#178765]" : "bg-blue-600 hover:bg-blue-700"}`} onClick={onParse} disabled={Boolean(loadingMessage)}>{loadingMessage && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{loadingMessage ? "Preparing..." : isManual ? "Create Manual Invoice" : isStructured ? t("order.parseChat") : t("order.parseWithAI")}</button>{loadingSteps.length > 0 && <LoadingSteps steps={loadingSteps} />}</section>
 }
 
 function ChatTypeCard({ active, badge, badgeClass, color, desc, icon: Icon, title, onClick }) {
-  const activeClass = color === "blue" ? "border-blue-500 bg-blue-50" : "border-[#1D9E75] bg-emerald-50"
-  return <button className={`rounded-lg border-2 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 ${active ? activeClass : "border-slate-200 hover:border-slate-300"}`} type="button" onClick={onClick}><div className="flex items-start justify-between gap-3"><Icon className={`h-8 w-8 ${color === "blue" ? "text-blue-600" : "text-[#1D9E75]"}`} /><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{badge}</span></div><h3 className="mt-4 text-lg font-semibold text-slate-950">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{desc}</p></button>
+  const activeClass = color === "blue" ? "border-blue-500 bg-blue-50" : color === "purple" ? "border-purple-500 bg-purple-50" : "border-[#1D9E75] bg-emerald-50"
+  return <button className={`rounded-lg border-2 bg-white p-5 text-left shadow-sm transition hover:-translate-y-0.5 ${active ? activeClass : "border-slate-200 hover:border-slate-300"}`} type="button" onClick={onClick}><div className="flex items-start justify-between gap-3"><Icon className={`h-8 w-8 ${color === "blue" ? "text-blue-600" : color === "purple" ? "text-purple-600" : "text-[#1D9E75]"}`} /><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${badgeClass}`}>{badge}</span></div><h3 className="mt-4 text-lg font-semibold text-slate-950">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{desc}</p></button>
 }
 
 function LoadingSteps({ steps }) { return <div className="rounded-lg border border-slate-200 bg-white p-4"><div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{steps.map((step) => <div key={step.label} className={`flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium ${step.status === "done" ? "bg-emerald-50 text-emerald-800" : step.status === "current" ? "bg-slate-100 text-slate-900" : "bg-white text-slate-400"}`}>{step.status === "done" ? <Check className="h-4 w-4" /> : step.status === "current" ? <Loader2 className="h-4 w-4 animate-spin" /> : <span className="h-4 w-4 rounded-full border border-slate-300" />}{step.label}</div>)}</div></div> }

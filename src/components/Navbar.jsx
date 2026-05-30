@@ -1,5 +1,5 @@
 ﻿import { useEffect, useRef, useState } from "react"
-import { BarChart3, ChevronDown, Languages, LogOut, MoreVertical, Moon, Package, PackageCheck, PlusCircle, Settings, Store, Sun, User, X } from "lucide-react"
+import { BarChart3, ChevronDown, ClipboardList, Languages, LogOut, MoreVertical, Moon, Package, PackageCheck, PlusCircle, Settings, Store, Sun, User, X } from "lucide-react"
 import toast from "react-hot-toast"
 import { NavLink, useNavigate } from "react-router-dom"
 import { useTranslation } from "react-i18next"
@@ -15,6 +15,7 @@ const navItems = [
   { to: "/products", key: "products", icon: Package },
   { to: "/delivery-inventory", key: "delivery", icon: PackageCheck },
   { to: "/new-order", key: "newOrder", icon: PlusCircle },
+  { to: "/orders", key: "orders", icon: ClipboardList },
   { to: "/sales", key: "sales", icon: Store },
 ]
 

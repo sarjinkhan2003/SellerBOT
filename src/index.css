@@ -151,3 +151,64 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--te
 }
 @media (min-width: 1440px) { .page-content { padding: 32px 40px; } }
 @media (max-width: 768px) { .page-content { padding: 14px; } }
+
+/* SellerBot dark-mode hardening */
+[data-theme="dark"] button.bg-white,
+[data-theme="dark"] .btn-secondary,
+[data-theme="dark"] .btn-outline {
+  background: #223047 !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] .btn-outline {
+  background: rgba(29, 158, 117, 0.1) !important;
+  color: #34d399 !important;
+}
+
+[data-theme="dark"] .btn-outline:hover,
+[data-theme="dark"] button.bg-white:hover {
+  background: #2d3c57 !important;
+  box-shadow: var(--shadow-md);
+}
+
+[data-theme="dark"] .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+[data-theme="dark"] .bg-slate-50,
+[data-theme="dark"] .bg-slate-100 {
+  background-color: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .bg-emerald-50 { background-color: rgba(16, 185, 129, 0.12) !important; }
+[data-theme="dark"] .bg-blue-50 { background-color: rgba(59, 130, 246, 0.12) !important; }
+[data-theme="dark"] .bg-purple-50 { background-color: rgba(168, 85, 247, 0.12) !important; }
+[data-theme="dark"] .bg-orange-50 { background-color: rgba(249, 115, 22, 0.12) !important; }
+[data-theme="dark"] .bg-red-50 { background-color: rgba(239, 68, 68, 0.12) !important; }
+
+[data-theme="dark"] .text-slate-950,
+[data-theme="dark"] .text-slate-900,
+[data-theme="dark"] .text-slate-800 {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .text-slate-700,
+[data-theme="dark"] .text-slate-600,
+[data-theme="dark"] .text-slate-500 {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .text-emerald-800 { color: #34d399 !important; }
+[data-theme="dark"] .text-blue-800 { color: #60a5fa !important; }
+[data-theme="dark"] .text-purple-800 { color: #c084fc !important; }
+[data-theme="dark"] .text-orange-800 { color: #fb923c !important; }
+[data-theme="dark"] .text-red-800 { color: #f87171 !important; }
+
+[data-theme="dark"] .border-slate-200,
+[data-theme="dark"] .border-slate-300,
+[data-theme="dark"] .border-emerald-200,
+[data-theme="dark"] .border-blue-200,
+[data-theme="dark"] .border-purple-200 {
+  border-color: var(--border) !important;
+}
