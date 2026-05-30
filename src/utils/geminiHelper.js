@@ -1,4 +1,4 @@
-import { updateGroqUsageFromHeaders } from "./aiUsage.js"
+import { DEFAULT_GROQ_MODEL, updateGroqUsageFromHeaders } from "./aiUsage.js"
 ﻿export async function convertToStructured(chatText, productCatalog = [], zones = [], ragProducts = [], ragZones = [], aiConfig = {}) {
   const productList = ragProducts.length > 0
     ? ragProducts.map((p) => `${p.product_name}${p.bangla_name ? "/" + p.bangla_name : ""} (৳${p.price}) [${Math.round((p.similarity || 0) * 100)}% match]`).join(", ")
@@ -233,7 +233,7 @@ async function convertWithGroq(prompt, aiConfig = {}) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: aiConfig.groqModel || import.meta.env.VITE_GROQ_MODEL || "openai/gpt-oss-20b",
+        model: aiConfig.groqModel || import.meta.env.VITE_GROQ_MODEL || DEFAULT_GROQ_MODEL,
         messages: [
           {
             role: "system",
@@ -252,8 +252,8 @@ async function convertWithGroq(prompt, aiConfig = {}) {
       return null
     }
 
-    updateGroqUsageFromHeaders(response.headers, aiConfig.groqModel || import.meta.env.VITE_GROQ_MODEL || "openai/gpt-oss-20b")
     const data = await response.json()
+    updateGroqUsageFromHeaders(response.headers, aiConfig.groqModel || import.meta.env.VITE_GROQ_MODEL || DEFAULT_GROQ_MODEL, data.usage)
     return cleanStructuredText(data.choices?.[0]?.message?.content || "")
   } catch (error) {
     console.error("Groq structured text conversion failed:", error)
