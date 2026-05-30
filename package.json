@@ -15,11 +15,13 @@
         "firebase": "^12.13.0",
         "fuse.js": "^7.3.0",
         "html2canvas": "latest",
+        "i18next": "^26.3.0",
         "jspdf": "latest",
         "lucide-react": "latest",
         "react": "latest",
         "react-dom": "latest",
         "react-hot-toast": "latest",
+        "react-i18next": "^17.0.8",
         "react-router-dom": "latest",
         "vite": "latest",
         "xlsx": "^0.18.5"
