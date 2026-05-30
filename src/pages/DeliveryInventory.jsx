@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { collection, onSnapshot, orderBy, query } from "firebase/firestore"
 import { Download, Eye, PackageCheck } from "lucide-react"
 import toast from "react-hot-toast"
@@ -24,6 +25,7 @@ const statusLabels = {
 }
 
 function DeliveryInventory() {
+  const { t } = useTranslation()
   const { currentUser } = useAuth()
   const [items, setItems] = useState([])
   const [filter, setFilter] = useState("All")
@@ -62,12 +64,12 @@ function DeliveryInventory() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">Inventory Flow</p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">Delivery Inventory</h2>
-          <p className="mt-2 text-sm text-slate-600">Orders currently in transit</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">{t("delivery.title")}</p>
+          <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">{t("delivery.title")}</h2>
+          <p className="mt-2 text-sm text-slate-600">{t("delivery.subtitle")}</p>
         </div>
         <button className="btn-outline inline-flex items-center gap-2" type="button" onClick={() => exportDeliveryToExcel(filteredItems)} disabled={!filteredItems.length}>
-          <Download className="h-4 w-4" /> Export Excel
+          <Download className="h-4 w-4" /> {t("delivery.exportExcel")}
         </button>
       </div>
 
@@ -110,7 +112,7 @@ function DeliveryInventory() {
       ) : (
         <div className="card py-12 text-center">
           <PackageCheck className="mx-auto h-10 w-10 text-slate-400" />
-          <h3 className="mt-3 text-lg font-semibold">No orders in delivery inventory yet.</h3>
+          <h3 className="mt-3 text-lg font-semibold">{t("delivery.noDeliveries")}</h3>
           <p className="mt-2 text-sm text-slate-600">Orders appear here when saved from New Order.</p>
         </div>
       )}

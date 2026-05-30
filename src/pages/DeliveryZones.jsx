@@ -12,6 +12,7 @@ import {
   updateDoc,
   writeBatch,
 } from "firebase/firestore"
+import { useTranslation } from "react-i18next"
 import { Edit2, Loader2, MapPin, PackagePlus, Trash2, X } from "lucide-react"
 import toast from "react-hot-toast"
 import DistrictSelect from "../components/DistrictSelect.jsx"
@@ -25,6 +26,7 @@ const outsideKeywords = ["outside", "baire", "বাইরে", "gramer", "gram"
 const initialForm = { charge: "", keywords: "", isHomeCity: false, isOutsideBaseCity: false }
 
 function DeliveryZones() {
+  const { t } = useTranslation()
   const { currentUser } = useAuth()
   const [zones, setZones] = useState([])
   const [baseDistrict, setBaseDistrict] = useState(null)
@@ -240,19 +242,19 @@ function DeliveryZones() {
     <section className="space-y-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">Delivery</p>
-          <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">Delivery Zones</h2>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Configure home city, specific city, and outside base city delivery charges.</p>
+          <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">{t("zones.title")}</p>
+          <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">{t("zones.title")}</h2>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{t("zones.subtitle", { defaultValue: "Configure home city, specific city, and outside base city delivery charges." })}</p>
         </div>
         <div className="flex flex-wrap gap-3">
-          {!loading && zones.length === 0 && <button className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100" type="button" onClick={quickSetup}><MapPin className="h-4 w-4" />Quick Setup</button>}
-          <button className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765]" type="button" onClick={openAddModal}><PackagePlus className="h-4 w-4" />Add Zone</button>
+          {!loading && zones.length === 0 && <button className="inline-flex h-11 items-center justify-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-4 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-100" type="button" onClick={quickSetup}><MapPin className="h-4 w-4" />{t("zones.quickSetup")}</button>}
+          <button className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765]" type="button" onClick={openAddModal}><PackagePlus className="h-4 w-4" />{t("zones.addZone")}</button>
         </div>
       </div>
 
       <AddressZonePanel address={customerAddress} activeZone={activeZone} detectedZone={detectedZone} manualZoneId={manualZoneId} onAddressChange={setCustomerAddress} onManualChange={setManualZoneId} zones={zones} />
 
-      {loading ? <div className="flex min-h-52 items-center justify-center rounded-lg border border-slate-200 bg-white"><Loader2 className="h-8 w-8 animate-spin text-[#1D9E75]" /></div> : zones.length > 0 ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{zones.map((zone) => <ZoneCard key={zone.id} baseDistrict={baseDistrict} zone={zone} onEdit={openEditModal} onDelete={handleDelete} />)}</div> : <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center"><h3 className="text-lg font-semibold text-slate-950">No delivery zones yet.</h3><p className="mt-2 text-sm text-slate-600">Use quick setup or add a custom delivery zone.</p></div>}
+      {loading ? <div className="flex min-h-52 items-center justify-center rounded-lg border border-slate-200 bg-white"><Loader2 className="h-8 w-8 animate-spin text-[#1D9E75]" /></div> : zones.length > 0 ? <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">{zones.map((zone) => <ZoneCard key={zone.id} baseDistrict={baseDistrict} zone={zone} onEdit={openEditModal} onDelete={handleDelete} />)}</div> : <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center"><h3 className="text-lg font-semibold text-slate-950">{t("zones.noZones")}</h3><p className="mt-2 text-sm text-slate-600">Use quick setup or add a custom delivery zone.</p></div>}
 
       {isModalOpen && <ZoneModal baseDistrict={baseDistrict} form={form} isEditing={Boolean(editingZone)} saving={saving} selectedDistrict={selectedDistrict} onClose={closeModal} onDistrictSelect={handleDistrictSelect} onFormChange={handleFormChange} onSave={handleSave} />}
     </section>

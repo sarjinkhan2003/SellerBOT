@@ -10,6 +10,7 @@ import {
   serverTimestamp,
   updateDoc,
 } from "firebase/firestore"
+import { useTranslation } from "react-i18next"
 import { Download, Edit2, PackagePlus, RefreshCw, Search, Trash2, X } from "lucide-react"
 import toast from "react-hot-toast"
 import * as XLSX from "xlsx"
@@ -35,6 +36,7 @@ const initialForm = {
 }
 
 function Products() {
+  const { t } = useTranslation()
   const { currentUser } = useAuth()
   const [products, setProducts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -294,13 +296,13 @@ function Products() {
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">
-            Catalog
+            {t("products.title")}
           </p>
           <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">
-            Products
+            {t("products.title")}
           </h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Manage the product names, aliases, variants, stock, and prices SellerBot will use for chat parsing and invoices.
+            {t("products.subtitle", { defaultValue: "Manage product codes, names, aliases, variants, stock, and prices for parsing and invoices." })}
           </p>
         </div>
 
@@ -316,7 +318,7 @@ function Products() {
               disabled={syncing}
             >
               <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} aria-hidden="true" />
-              {syncing ? syncProgress || "Syncing..." : "Sync AI Search"}
+              {syncing ? syncProgress || t("common.loading") : t("products.syncAI")}
             </button>
           )}
           <button
@@ -326,7 +328,7 @@ function Products() {
             disabled={!products.length}
           >
             <Download className="h-4 w-4" aria-hidden="true" />
-            Export Inventory
+            {t("products.exportInventory")}
           </button>
           <button
             className="inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765]"
@@ -334,7 +336,7 @@ function Products() {
             onClick={openAddModal}
           >
             <PackagePlus className="h-4 w-4" aria-hidden="true" />
-            Add Product
+            {t("products.addProduct")}
           </button>
         </div>
       </div>
@@ -368,7 +370,7 @@ function Products() {
       ) : (
         <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center">
           <h3 className="text-lg font-semibold text-slate-950">
-            No products yet. Add your first product!
+            {t("products.noProducts")}
           </h3>
           <p className="mt-2 text-sm text-slate-600">
             Your catalog will appear here as soon as you save an item.

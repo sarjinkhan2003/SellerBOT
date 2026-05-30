@@ -127,3 +127,27 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--te
   border-color: #000 !important;
 }
 [data-theme="dark"] .sellerbot-invoice-print { background: #fff !important; }
+
+/* App shell: full-width desktop workspace with left navigation */
+:root { --sidebar-width: 280px; --navbar-height: 72px; --bottom-tab-height: 0px; }
+.page { padding-top: var(--navbar-height); padding-bottom: 0; }
+.page-content { max-width: none; width: 100%; padding: 24px; }
+.app-topbar { position: fixed; top: 0; right: 0; left: 0; z-index: 40; height: var(--navbar-height); display: flex; align-items: center; gap: 16px; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--bg-card) 92%, transparent); padding: 0 18px; backdrop-filter: blur(16px); }
+.app-sidebar { position: fixed; inset: 0 auto 0 0; z-index: 45; width: var(--sidebar-width); flex-direction: column; gap: 24px; border-right: 1px solid var(--border); background: color-mix(in srgb, var(--bg-card) 95%, transparent); padding: 22px 18px; backdrop-filter: blur(18px); }
+.sidebar-link { display: flex; align-items: center; gap: 12px; border-radius: 16px; padding: 12px 14px; color: var(--text-secondary); font-size: 14px; font-weight: 800; text-decoration: none; }
+.sidebar-link:hover { background: var(--bg-tertiary); color: var(--text-primary); }
+.sidebar-link.active { background: var(--primary-light); color: var(--primary); box-shadow: inset 0 0 0 1px var(--primary-glow); }
+.profile-trigger { display: inline-flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--bg-card); color: var(--text-primary); padding: 7px 10px 7px 7px; box-shadow: var(--shadow-sm); }
+.profile-trigger:hover { box-shadow: var(--shadow-md); }
+.profile-menu { position: absolute; right: 0; top: calc(100% + 10px); width: 240px; border: 1px solid var(--border); border-radius: 18px; background: var(--bg-card); box-shadow: var(--shadow-lg); padding: 8px; z-index: 80; }
+.profile-menu-item { display: flex; width: 100%; align-items: center; gap: 10px; border: 0; border-radius: 12px; background: transparent; color: var(--text-primary); padding: 10px 12px; text-align: left; font-size: 14px; font-weight: 700; }
+.profile-menu-item:hover { background: var(--bg-tertiary); }
+.mobile-drawer { height: 100%; width: min(86vw, 340px); border-right: 1px solid var(--border); background: var(--bg-card); padding: 18px; box-shadow: var(--shadow-lg); }
+
+@media (min-width: 1024px) {
+  .app-topbar { left: var(--sidebar-width); }
+  .page { padding-left: var(--sidebar-width); }
+  .page-content { padding: 28px; }
+}
+@media (min-width: 1440px) { .page-content { padding: 32px 40px; } }
+@media (max-width: 768px) { .page-content { padding: 14px; } }

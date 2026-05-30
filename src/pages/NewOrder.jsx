@@ -1,4 +1,5 @@
 import { useMemo, useRef, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { addDoc, collection, doc, getDoc, getDocs, serverTimestamp } from "firebase/firestore"
 import html2canvas from "html2canvas"
 import jsPDF from "jspdf"
@@ -320,7 +321,7 @@ function ChatStage({ chatText, chatType, loadingSteps, loadingMessage, onChatCha
     toast.success("Order format copied.")
   }
 
-  return <section className="space-y-6"><div><h2 className="text-3xl font-semibold">New Order</h2><p className="text-sm text-slate-600">Choose how the customer sent the message, then paste the chat.</p></div><div className="grid gap-4 md:grid-cols-2"><ChatTypeCard active={isStructured} badge="Fast & Accurate" badgeClass="bg-emerald-100 text-emerald-800" color="green" desc={"Customer followed your order format with labels like \u09a8\u09be\u09ae\u0983, \u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983, \u09aa\u09a3\u09cd\u09af\u0983"} icon={ClipboardList} title="Structured Chat" onClick={() => onChatTypeChange("structured")} /><ChatTypeCard active={!isStructured} badge="AI Powered" badgeClass="bg-blue-100 text-blue-800" color="blue" desc="Customer sent a normal conversation message without any specific format" icon={MessageCircle} title="Unstructured Chat" onClick={() => onChatTypeChange("unstructured")} /></div><textarea className="min-h-[320px] w-full rounded-lg border border-slate-300 bg-white p-4 text-sm outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" rows={12} value={chatText} onChange={(event) => onChatChange(event.target.value)} placeholder={isStructured ? structuredPlaceholder : unstructuredPlaceholder} />{isStructured ? <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between"><p>Tip: Share the order format with your customers for best accuracy.</p><button className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-800" type="button" onClick={copyFormat}>Copy Order Format</button></div> : <p className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Tip: AI will read the conversation and extract order details automatically. Works with Bangla, English and Banglish.</p>}<button className={`h-12 w-full rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${isStructured ? "bg-[#1D9E75] hover:bg-[#178765]" : "bg-blue-600 hover:bg-blue-700"}`} onClick={onParse} disabled={Boolean(loadingMessage)}>{loadingMessage && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{loadingMessage ? "Parsing..." : isStructured ? "Parse Chat" : "Parse with AI"}</button>{loadingSteps.length > 0 && <LoadingSteps steps={loadingSteps} />}</section>
+  return <section className="space-y-6"><div><h2 className="text-3xl font-semibold">{t("order.title")}</h2><p className="text-sm text-slate-600">{t("order.subtitle", { defaultValue: "Choose how the customer sent the message, then paste the chat." })}</p></div><div className="grid gap-4 md:grid-cols-2"><ChatTypeCard active={isStructured} badge="Fast & Accurate" badgeClass="bg-emerald-100 text-emerald-800" color="green" desc={"Customer followed your order format with labels like \u09a8\u09be\u09ae\u0983, \u09a0\u09bf\u0995\u09be\u09a8\u09be\u0983, \u09aa\u09a3\u09cd\u09af\u0983"} icon={ClipboardList} title={t("order.structuredChat")} onClick={() => onChatTypeChange("structured")} /><ChatTypeCard active={!isStructured} badge="AI Powered" badgeClass="bg-blue-100 text-blue-800" color="blue" desc={t("order.unstructuredDesc")} icon={MessageCircle} title={t("order.unstructuredChat")} onClick={() => onChatTypeChange("unstructured")} /></div><textarea className="min-h-[320px] w-full rounded-lg border border-slate-300 bg-white p-4 text-sm outline-none focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" rows={12} value={chatText} onChange={(event) => onChatChange(event.target.value)} placeholder={isStructured ? structuredPlaceholder : unstructuredPlaceholder} />{isStructured ? <div className="flex flex-col gap-3 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 sm:flex-row sm:items-center sm:justify-between"><p>Tip: Share the order format with your customers for best accuracy.</p><button className="rounded-md border border-emerald-300 bg-white px-3 py-2 font-semibold text-emerald-800" type="button" onClick={copyFormat}>{t("order.copyTemplate")}</button></div> : <p className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-sm text-blue-900">Tip: AI will read the conversation and extract order details automatically. Works with Bangla, English and Banglish.</p>}<button className={`h-12 w-full rounded-md px-4 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-70 ${isStructured ? "bg-[#1D9E75] hover:bg-[#178765]" : "bg-blue-600 hover:bg-blue-700"}`} onClick={onParse} disabled={Boolean(loadingMessage)}>{loadingMessage && <Loader2 className="mr-2 inline h-4 w-4 animate-spin" />}{loadingMessage ? "Parsing..." : isStructured ? t("order.parseChat") : t("order.parseWithAI")}</button>{loadingSteps.length > 0 && <LoadingSteps steps={loadingSteps} />}</section>
 }
 
 function ChatTypeCard({ active, badge, badgeClass, color, desc, icon: Icon, title, onClick }) {
@@ -351,29 +352,29 @@ function ReviewStage(props) {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-3xl font-semibold">Review Order</h2>
+          <h2 className="text-3xl font-semibold">{t("order.reviewOrder")}</h2>
           <ParseBadge parsedBy={parsedBy} />
         </div>
-        <button className="btn-outline" onClick={onBack}>Back to Chat</button>
+        <button className="btn-outline" onClick={onBack}>{t("order.backToChat")}</button>
       </div>
 
 
-      <Card title="Customer Info">
+      <Card title={t("order.customerInfo")}>
         <div className="grid gap-4 md:grid-cols-2">
-          <Input label="Customer Name" value={order.customerName} onChange={(v) => onUpdate("customerName", v)} />
-          <Input label="Phone" value={order.phone} onChange={(v) => onUpdate("phone", v)} />
+          <Input label={t("order.customerName")} value={order.customerName} onChange={(v) => onUpdate("customerName", v)} />
+          <Input label={t("order.phone")} value={order.phone} onChange={(v) => onUpdate("phone", v)} />
         </div>
-        <Textarea label="Full Address" value={order.address} onChange={(v) => onUpdate("address", v)} />
+        <Textarea label={t("order.fullAddress")} value={order.address} onChange={(v) => onUpdate("address", v)} />
         <ZoneNotice order={order} />
-        <Select label="Zone override" value={order.zoneId} onChange={onZoneChange} options={[{ label: "Select zone", value: "" }, ...zones.map((z) => ({ label: `${z.area} - ৳${z.charge}`, value: z.id }))]} />
-        <Input label="Delivery Charge" type="number" value={order.deliveryCharge} onChange={(v) => onUpdate("deliveryCharge", Number(v))} />
+        <Select label={t("order.zoneOverride")} value={order.zoneId} onChange={onZoneChange} options={[{ label: "Select zone", value: "" }, ...zones.map((z) => ({ label: `${z.area} - ৳${z.charge}`, value: z.id }))]} />
+        <Input label={t("order.deliveryCharge")} type="number" value={order.deliveryCharge} onChange={(v) => onUpdate("deliveryCharge", Number(v))} />
       </Card>
 
-      <Card title="Products">
+      <Card title={t("order.products")}>
         <ProductTable rows={order.products} products={products} onAdd={onAddProduct} onRemove={onProductRemove} onUpdate={onProductUpdate} />
       </Card>
 
-      <Card title="Order Summary">
+      <Card title={t("order.orderSummary")}>
         <SummaryLine label="Subtotal" value={subtotal} />
         <SummaryLine label="Delivery" value={order.deliveryCharge} />
         <Input label="Discount" type="number" value={order.discount} onChange={(v) => onUpdate("discount", Number(v))} />
@@ -382,7 +383,7 @@ function ReviewStage(props) {
 
       <PaymentSection order={order} grandTotal={grandTotal} subtotal={subtotal} paymentAmounts={paymentAmounts} onUpdate={onUpdate} />
       <Card title="Notes"><Textarea label="Special Instructions" value={order.notes} onChange={(v) => onUpdate("notes", v)} /></Card>
-      <button className="btn-primary h-12 w-full text-lg" onClick={onGenerate}>Generate Invoice</button>
+      <button className="btn-primary h-12 w-full text-lg" onClick={onGenerate}>{t("order.generateInvoice")}</button>
     </section>
   )
 }

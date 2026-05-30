@@ -1,4 +1,5 @@
 ﻿import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
 import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore"
 import { Loader2, Save } from "lucide-react"
 import toast from "react-hot-toast"
@@ -18,6 +19,7 @@ const initialForm = {
 }
 
 function ShopSettings() {
+  const { t } = useTranslation()
   const { currentUser } = useAuth()
   const [form, setForm] = useState(initialForm)
   const [district, setDistrict] = useState(null)
@@ -91,9 +93,9 @@ function ShopSettings() {
   return (
     <section className="space-y-6">
       <div>
-        <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">Settings</p>
-        <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">Shop Settings</h2>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Keep seller profile, payment numbers, and base district ready for invoices and delivery automation.</p>
+        <p className="text-sm font-semibold uppercase tracking-wide text-[#1D9E75]">{t("settings.title")}</p>
+        <h2 className="mt-1 text-3xl font-semibold tracking-normal text-slate-950">{t("settings.title")}</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{t("settings.subtitle", { defaultValue: "Keep seller profile, payment numbers, and base district ready for invoices and delivery automation." })}</p>
       </div>
 
       <form className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm" onSubmit={handleSave}>
@@ -107,7 +109,7 @@ function ShopSettings() {
         </div>
         <div className="mt-5"><DistrictSelect label="Base City/District" selectedDistrict={district} onSelect={setDistrict} disabled={saving} /></div>
         <label className="mt-5 block"><span className="text-sm font-medium text-slate-700">Shop Address</span><textarea className="mt-2 min-h-28 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition placeholder:text-slate-400 focus:border-[#1D9E75] focus:ring-2 focus:ring-[#1D9E75]/20" name="address" value={form.address} onChange={handleChange} disabled={saving} /></label>
-        <button className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765] disabled:cursor-not-allowed disabled:opacity-70" type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}Save Changes</button>
+        <button className="mt-6 inline-flex h-11 items-center justify-center gap-2 rounded-md bg-[#1D9E75] px-4 text-sm font-semibold text-white transition hover:bg-[#178765] disabled:cursor-not-allowed disabled:opacity-70" type="submit" disabled={saving}>{saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}{t("settings.saveChanges")}</button>
       </form>
     </section>
   )
