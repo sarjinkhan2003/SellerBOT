@@ -43,8 +43,8 @@ function Login() {
   }
 
   return (
-    <main className="grid min-h-screen bg-[var(--bg-secondary)] text-[var(--text-primary)] lg:grid-cols-[1.05fr_.95fr]">
-      <section className="relative hidden overflow-hidden bg-slate-950 p-10 text-white lg:flex lg:flex-col lg:justify-between">
+    <main className="auth-animated-bg relative grid min-h-screen overflow-hidden text-[var(--text-primary)] lg:grid-cols-[1.05fr_.95fr]"><div className="auth-orb auth-orb-one" /><div className="auth-orb auth-orb-two" /><div className="auth-grid" />
+      <section className="relative z-10 hidden overflow-hidden bg-slate-950/80 p-10 text-white lg:flex lg:flex-col lg:justify-between">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(29,158,117,.35),transparent_28rem),radial-gradient(circle_at_80%_30%,rgba(6,182,212,.25),transparent_24rem)]" />
         <div className="relative z-10 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#1D9E75] text-lg font-black">SB</div>
@@ -61,7 +61,7 @@ function Login() {
         <p className="relative z-10 text-sm text-slate-400">Built for Bangladeshi Facebook and WhatsApp sellers.</p>
       </section>
 
-      <section className="flex min-h-screen items-center justify-center px-4 py-10">
+      <section className="relative z-10 flex min-h-screen items-center justify-center px-4 py-10">
         <div className="w-full max-w-md rounded-3xl border bg-[var(--bg-card)] p-6 shadow-2xl sm:p-8" style={{ borderColor: "var(--border)" }}>
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#1D9E75] text-white shadow-lg shadow-emerald-500/20"><Bot className="h-8 w-8" /></div>

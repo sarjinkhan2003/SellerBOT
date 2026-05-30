@@ -279,3 +279,91 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--te
 .sellerbot-invoice-print tr:hover td {
   background: #ffffff !important;
 }
+
+
+/* Animated auth backgrounds */
+.auth-animated-bg {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(29, 158, 117, 0.28), transparent 30rem),
+    radial-gradient(circle at 82% 12%, rgba(6, 182, 212, 0.18), transparent 28rem),
+    linear-gradient(135deg, #07111f 0%, #0f172a 48%, #10251f 100%);
+}
+
+[data-theme="light"] .auth-animated-bg {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(29, 158, 117, 0.18), transparent 30rem),
+    radial-gradient(circle at 82% 12%, rgba(6, 182, 212, 0.14), transparent 28rem),
+    linear-gradient(135deg, #f8fafc 0%, #edfdf8 48%, #eef6ff 100%);
+}
+
+.auth-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.2;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.08) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(circle at center, black, transparent 78%);
+}
+
+[data-theme="light"] .auth-grid {
+  opacity: 0.34;
+  background-image:
+    linear-gradient(rgba(15,23,42,0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15,23,42,0.07) 1px, transparent 1px);
+}
+
+.auth-orb {
+  position: absolute;
+  width: 22rem;
+  height: 22rem;
+  border-radius: 999px;
+  filter: blur(16px);
+  opacity: 0.38;
+  pointer-events: none;
+  animation: sellerbotFloat 9s ease-in-out infinite;
+}
+
+.auth-orb-one {
+  top: 9%;
+  left: 6%;
+  background: rgba(29, 158, 117, 0.35);
+}
+
+.auth-orb-two {
+  right: 8%;
+  bottom: 8%;
+  background: rgba(6, 182, 212, 0.26);
+  animation-delay: -3.5s;
+}
+
+.auth-card {
+  position: relative;
+  box-shadow: 0 28px 90px rgba(0, 0, 0, 0.2);
+}
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: 29px;
+  background: linear-gradient(135deg, rgba(29, 158, 117, 0.55), rgba(6, 182, 212, 0.18), transparent 55%);
+  opacity: 0.65;
+}
+
+.district-auth-field > div {
+  margin-bottom: 0;
+}
+
+@keyframes sellerbotFloat {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(18px, -24px, 0) scale(1.08); }
+}
+
+@media (max-width: 640px) {
+  .auth-orb { width: 16rem; height: 16rem; }
+  .auth-grid { background-size: 34px 34px; }
+}
