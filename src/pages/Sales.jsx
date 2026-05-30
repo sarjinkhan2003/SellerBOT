@@ -10,7 +10,7 @@ import { useNavigate, useSearchParams } from "react-router-dom"
 import InvoiceTemplate from "../components/InvoiceTemplate.jsx"
 import { useAuth } from "../context/AuthContext.jsx"
 import { db } from "../firebase/config.js"
-import { getOrderDateValue, getRevenueBreakdown } from "../utils/analytics.js"
+import { getOrderDateValue, getRevenueBreakdown, isRevenueOrder } from "../utils/analytics.js"
 import { printInvoiceElement } from "../utils/printInvoice.js"
 
 const pageSize = 20
@@ -38,6 +38,7 @@ function Sales() {
   }, [currentUser?.uid])
 
   const filteredOrders = useMemo(() => orders.filter((order) => {
+    if (!isRevenueOrder(order)) return false
     const date = getOrderDateValue(order)
     const search = filters.search.trim().toLowerCase()
     if (filters.from && date < new Date(`${filters.from}T00:00:00`)) return false

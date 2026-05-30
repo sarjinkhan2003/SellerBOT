@@ -1,10 +1,21 @@
-﻿function getOrderDate(order) {
+﻿const excludedRevenueStatuses = ["not_delivered", "returned", "refunded", "cancelled"]
+
+function getOrderDate(order) {
   return order.createdAt?.toDate ? order.createdAt.toDate() : new Date(order.createdAt || Date.now())
+}
+
+export function isRevenueOrder(order = {}) {
+  const status = order.deliveryStatus || order.fulfillmentStatus || ""
+  return !order.salesExcluded && !excludedRevenueStatuses.includes(status)
+}
+
+export function filterRevenueOrders(orders = []) {
+  return orders.filter(isRevenueOrder)
 }
 
 export function getTodaysSales(orders) {
   const today = new Date().toDateString()
-  const todayOrders = orders.filter((o) => getOrderDate(o).toDateString() === today)
+  const todayOrders = filterRevenueOrders(orders).filter((o) => getOrderDate(o).toDateString() === today)
   return {
     count: todayOrders.length,
     revenue: todayOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0),
@@ -13,7 +24,7 @@ export function getTodaysSales(orders) {
 
 export function getThisMonthSales(orders) {
   const now = new Date()
-  const monthOrders = orders.filter((o) => {
+  const monthOrders = filterRevenueOrders(orders).filter((o) => {
     const d = getOrderDate(o)
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
   })
@@ -25,7 +36,7 @@ export function getThisMonthSales(orders) {
 
 export function getTopProducts(orders, limit = 5) {
   const productMap = {}
-  orders.forEach((order) => {
+  filterRevenueOrders(orders).forEach((order) => {
     ;(order.products || []).forEach((p) => {
       if (!productMap[p.productName]) {
         productMap[p.productName] = { name: p.productName, units: 0, revenue: 0 }
@@ -41,7 +52,7 @@ export function getTopProducts(orders, limit = 5) {
 
 export function getSalesByZone(orders) {
   const zoneMap = {}
-  orders.forEach((order) => {
+  filterRevenueOrders(orders).forEach((order) => {
     const zone = order.zone || "Unknown"
     if (!zoneMap[zone]) zoneMap[zone] = { zone, count: 0, revenue: 0 }
     zoneMap[zone].count += 1
@@ -52,7 +63,7 @@ export function getSalesByZone(orders) {
 
 export function getPaymentBreakdown(orders) {
   const methodMap = {}
-  orders.forEach((order) => {
+  filterRevenueOrders(orders).forEach((order) => {
     const method = order.paymentMethod || "COD"
     if (!methodMap[method]) methodMap[method] = { method, count: 0, revenue: 0 }
     methodMap[method].count += 1
@@ -62,14 +73,14 @@ export function getPaymentBreakdown(orders) {
 }
 
 export function getUnpaidOrders(orders) {
-  return orders.filter((o) => o.paymentStatus === "Unpaid")
+  return filterRevenueOrders(orders).filter((o) => o.paymentStatus === "Unpaid")
 }
 
 export function getYesterdaysSales(orders) {
   const yesterday = new Date()
   yesterday.setDate(yesterday.getDate() - 1)
   const yDate = yesterday.toDateString()
-  const yOrders = orders.filter((o) => getOrderDate(o).toDateString() === yDate)
+  const yOrders = filterRevenueOrders(orders).filter((o) => getOrderDate(o).toDateString() === yDate)
   return {
     count: yOrders.length,
     revenue: yOrders.reduce((sum, o) => sum + (o.grandTotal || 0), 0),
@@ -104,7 +115,7 @@ export function exportToCSV(orders) {
     "OnlineAmount",
     "CODAmount",
   ]
-  const rows = orders.map((o) => [
+  const rows = filterRevenueOrders(orders).map((o) => [
     o.orderNumber || "",
     o.createdAt ? getOrderDate(o).toLocaleDateString("en-GB") : "",
     o.customerName || "",
@@ -145,7 +156,7 @@ export function getOrderDateValue(order) {
 }
 
 export function getRevenueBreakdown(orders) {
-  return orders.reduce((acc, order) => {
+  return filterRevenueOrders(orders).reduce((acc, order) => {
     acc.grossRevenue += order.grossRevenue || order.grandTotal || 0
     acc.productRevenue += order.productRevenue || order.subtotal || 0
     acc.deliveryRevenue += order.deliveryRevenue || order.deliveryCharge || 0
@@ -159,7 +170,7 @@ export function getRevenueBreakdown(orders) {
 
 export function getProfitByProduct(orders) {
   const productMap = {}
-  orders.forEach((order) => {
+  filterRevenueOrders(orders).forEach((order) => {
     ;(order.products || []).forEach((p) => {
       if (!productMap[p.productName]) productMap[p.productName] = { name: p.productName, unitsSold: 0, revenue: 0, cost: 0, profit: 0, margin: 0 }
       const revenue = p.totalPrice || 0
@@ -174,9 +185,10 @@ export function getProfitByProduct(orders) {
 }
 
 export function getCollectionSummary(orders) {
-  const collected = orders.filter((o) => o.paymentStatus === "Paid" || o.productPaymentStatus === "Paid").reduce((sum, o) => sum + (o.grandTotal || 0), 0)
-  const onlineReceived = orders.reduce((sum, o) => sum + (o.onlineAmount || 0), 0)
-  const codPending = orders.filter((o) => o.paymentStatus !== "Paid" && o.productPaymentStatus !== "Paid").reduce((sum, o) => sum + (o.codAmount || 0), 0)
+  const revenueOrders = filterRevenueOrders(orders)
+  const collected = revenueOrders.filter((o) => o.paymentStatus === "Paid" || o.productPaymentStatus === "Paid").reduce((sum, o) => sum + (o.grandTotal || 0), 0)
+  const onlineReceived = revenueOrders.reduce((sum, o) => sum + (o.onlineAmount || 0), 0)
+  const codPending = revenueOrders.filter((o) => o.paymentStatus !== "Paid" && o.productPaymentStatus !== "Paid").reduce((sum, o) => sum + (o.codAmount || 0), 0)
   return { collected, onlineReceived, codPending }
 }
 

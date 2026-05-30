@@ -55,7 +55,25 @@ export async function updateDeliveryStatus(uid, deliveryId, newStatus, order, op
       updatePayload.refundedAt = newStatus === "refunded" ? new Date() : null
     }
 
+    const excludedSalesStatuses = ["not_delivered", "returned", "refunded", "cancelled"]
+    const orderUpdatePayload = {
+      deliveryStatus: newStatus,
+      fulfillmentStatus: newStatus,
+      salesExcluded: excludedSalesStatuses.includes(newStatus),
+      salesExclusionReason: excludedSalesStatuses.includes(newStatus) ? newStatus : "",
+      updatedAt: new Date(),
+    }
+    if (["returned", "refunded"].includes(newStatus)) {
+      orderUpdatePayload.refundStatus = updatePayload.refundStatus
+      orderUpdatePayload.refundAmount = updatePayload.refundAmount
+      orderUpdatePayload.refundNotes = updatePayload.refundNotes
+      orderUpdatePayload.refundedAt = updatePayload.refundedAt
+    }
+
     batch.update(deliveryRef, updatePayload)
+    if (order.orderId) {
+      batch.update(doc(db, "users", uid, "orders", order.orderId), orderUpdatePayload)
+    }
 
     const restockStatuses = ["not_delivered", "returned", "refunded", "cancelled"]
     const shouldRestock = restockStatuses.includes(newStatus) && !restockStatuses.includes(order.deliveryStatus)
