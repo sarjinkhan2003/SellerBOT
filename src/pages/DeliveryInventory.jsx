@@ -8,12 +8,13 @@ import { useAuth } from "../context/AuthContext.jsx"
 import { db } from "../firebase/config.js"
 import { updateDeliveryStatus } from "../utils/inventoryManager.js"
 
-const statuses = ["All", "Pending", "Delivered", "Not Delivered", "Returned", "Cancelled"]
+const statuses = ["All", "Pending", "Delivered", "Not Delivered", "Returned", "Refunded", "Cancelled"]
 const statusValues = {
   Pending: "pending",
   Delivered: "delivered",
   "Not Delivered": "not_delivered",
   Returned: "returned",
+  Refunded: "refunded",
   Cancelled: "cancelled",
 }
 const statusLabels = {
@@ -21,6 +22,7 @@ const statusLabels = {
   delivered: "Delivered",
   not_delivered: "Not Delivered",
   returned: "Returned",
+  refunded: "Refunded",
   cancelled: "Cancelled",
 }
 
@@ -48,9 +50,22 @@ function DeliveryInventory() {
 
   const changeStatus = async (item, status) => {
     if (!currentUser?.uid || item.deliveryStatus === status) return
+    const options = {}
+    if (["returned", "refunded"].includes(status)) {
+      const label = status === "refunded" ? "refunded" : "returned"
+      const amount = window.prompt(`Enter refund amount for this ${label} order`, item.grandTotal || 0)
+      if (amount === null) return
+      const parsedAmount = Number(amount)
+      if (Number.isNaN(parsedAmount) || parsedAmount < 0) {
+        toast.error("Please enter a valid refund amount.")
+        return
+      }
+      options.refundAmount = parsedAmount
+      options.refundNotes = window.prompt("Refund note (optional)", "") || ""
+    }
     try {
       setUpdatingId(item.id)
-      const result = await updateDeliveryStatus(currentUser.uid, item.id, status, item)
+      const result = await updateDeliveryStatus(currentUser.uid, item.id, status, item, options)
       if (!result.success) throw new Error(result.error || "Could not update status")
       toast.success(`Delivery marked as ${statusLabels[status]}.`)
     } catch (error) {
@@ -132,13 +147,14 @@ function StatusBadge({ status = "pending" }) {
     delivered: "bg-emerald-50 text-emerald-800",
     not_delivered: "bg-red-50 text-red-800",
     returned: "bg-orange-50 text-orange-800",
+    refunded: "bg-purple-50 text-purple-800",
     cancelled: "bg-slate-100 text-slate-700",
   }
   return <span className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[status] || styles.pending}`}>{statusLabels[status] || "Pending"}</span>
 }
 
 function DetailsModal({ item, onClose }) {
-  return <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 px-4 py-6"><section className="mx-auto max-w-3xl rounded-lg bg-white p-5"><div className="mb-4 flex justify-between"><h3 className="text-xl font-semibold">Delivery Details</h3><button className="btn-outline" onClick={onClose}>Close</button></div><div className="space-y-3 text-sm"><p><b>Order:</b> {item.orderNumber}</p><p><b>Customer:</b> {item.customerName} / {item.phone}</p><p className="whitespace-pre-wrap"><b>Address:</b> {item.address}</p><p><b>Zone:</b> {item.zone}</p><p><b>Status:</b> {statusLabels[item.deliveryStatus]}</p>{(item.products || []).map((product, index) => <p key={index} className="rounded bg-slate-50 p-2">[{product.productCode || "-"}] {product.productName} x {product.quantity}</p>)}</div></section></div>
+  return <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-950/60 px-4 py-6"><section className="mx-auto max-w-3xl rounded-lg bg-white p-5"><div className="mb-4 flex justify-between"><h3 className="text-xl font-semibold">Delivery Details</h3><button className="btn-outline" onClick={onClose}>Close</button></div><div className="space-y-3 text-sm"><p><b>Order:</b> {item.orderNumber}</p><p><b>Customer:</b> {item.customerName} / {item.phone}</p><p className="whitespace-pre-wrap"><b>Address:</b> {item.address}</p><p><b>Zone:</b> {item.zone}</p><p><b>Status:</b> {statusLabels[item.deliveryStatus]}</p>{item.refundStatus && <p><b>Refund:</b> {item.refundStatus} - {"\u09F3"}{item.refundAmount || 0}</p>}{(item.products || []).map((product, index) => <p key={index} className="rounded bg-slate-50 p-2">[{product.productCode || "-"}] {product.productName} x {product.quantity}</p>)}</div></section></div>
 }
 
 function formatDate(value) {
@@ -157,6 +173,8 @@ function exportDeliveryToExcel(items) {
     Zone: item.zone,
     Products: (item.products || []).map((product) => `${product.productCode || product.productName} x${product.quantity}`).join(", "),
     Status: item.deliveryStatus,
+    "Refund Status": item.refundStatus || "",
+    "Refund Amount": item.refundAmount || 0,
     "Delivered At": item.deliveredAt ? formatDate(item.deliveredAt) : "-",
   }))
   const worksheet = XLSX.utils.json_to_sheet(data)

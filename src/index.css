@@ -212,3 +212,43 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--te
 [data-theme="dark"] .border-purple-200 {
   border-color: var(--border) !important;
 }
+
+/* SellerBot destructive and modal dark-mode contrast */
+[data-theme="dark"] .btn-danger {
+  background: rgba(239, 68, 68, 0.16) !important;
+  border-color: rgba(248, 113, 113, 0.75) !important;
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] .btn-danger:hover {
+  background: #dc2626 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(239, 68, 68, 0.25);
+}
+
+[data-theme="dark"] .text-red-700,
+[data-theme="dark"] button.text-red-700 {
+  color: #fca5a5 !important;
+}
+
+[data-theme="dark"] button.text-slate-700,
+[data-theme="dark"] .text-slate-400 {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .bg-yellow-50 { background-color: rgba(234, 179, 8, 0.12) !important; }
+[data-theme="dark"] .text-yellow-900,
+[data-theme="dark"] .text-yellow-800 { color: #facc15 !important; }
+
+[data-theme="dark"] input,
+[data-theme="dark"] textarea,
+[data-theme="dark"] select {
+  background-color: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  border-color: var(--border) !important;
+}
+
+[data-theme="dark"] option {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}

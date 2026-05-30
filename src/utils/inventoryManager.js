@@ -37,18 +37,27 @@ export async function moveToDeliveryInventory(uid, order) {
   }
 }
 
-export async function updateDeliveryStatus(uid, deliveryId, newStatus, order) {
+export async function updateDeliveryStatus(uid, deliveryId, newStatus, order, options = {}) {
   const batch = writeBatch(db)
 
   try {
     const deliveryRef = doc(db, "users", uid, "deliveryInventory", deliveryId)
-    batch.update(deliveryRef, {
+    const updatePayload = {
       deliveryStatus: newStatus,
       updatedAt: new Date(),
-      deliveredAt: newStatus === "delivered" ? new Date() : null,
-    })
+      deliveredAt: newStatus === "delivered" ? new Date() : order.deliveredAt || null,
+    }
 
-    const restockStatuses = ["not_delivered", "returned", "cancelled"]
+    if (["returned", "refunded"].includes(newStatus)) {
+      updatePayload.refundStatus = newStatus === "refunded" ? "refunded" : "refund_pending"
+      updatePayload.refundAmount = Number(options.refundAmount || 0)
+      updatePayload.refundNotes = options.refundNotes || ""
+      updatePayload.refundedAt = newStatus === "refunded" ? new Date() : null
+    }
+
+    batch.update(deliveryRef, updatePayload)
+
+    const restockStatuses = ["not_delivered", "returned", "refunded", "cancelled"]
     const shouldRestock = restockStatuses.includes(newStatus) && !restockStatuses.includes(order.deliveryStatus)
     if (shouldRestock) {
       for (const product of order.products || []) {
