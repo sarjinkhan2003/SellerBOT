@@ -252,3 +252,30 @@ td { padding: 14px 16px; border-bottom: 1px solid var(--border); color: var(--te
   background-color: var(--bg-primary);
   color: var(--text-primary);
 }
+
+
+/* Invoice preview must stay print-white in every theme */
+.sellerbot-invoice-print,
+.sellerbot-invoice-print * {
+  color: #000000 !important;
+  border-color: #000000 !important;
+  box-shadow: none !important;
+}
+
+.sellerbot-invoice-print,
+.sellerbot-invoice-print .invoice-box,
+.sellerbot-invoice-print section,
+.sellerbot-invoice-print header,
+.sellerbot-invoice-print footer,
+.sellerbot-invoice-print table,
+.sellerbot-invoice-print thead,
+.sellerbot-invoice-print tbody,
+.sellerbot-invoice-print tr,
+.sellerbot-invoice-print th,
+.sellerbot-invoice-print td {
+  background: #ffffff !important;
+}
+
+.sellerbot-invoice-print tr:hover td {
+  background: #ffffff !important;
+}

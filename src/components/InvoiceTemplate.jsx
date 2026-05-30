@@ -10,7 +10,7 @@ function money(value) {
 
 function PaymentInfo({ order }) {
   if (order.paymentType === "delivery_only_online") {
-    return <><p>Delivery Charge: {money(order.deliveryRevenue || order.deliveryCharge)} — Paid via {order.deliveryPaymentMethod || "bKash"} {order.deliveryPaymentStatus === "Paid" ? "OK" : "Pending"}</p><p>Delivery Transaction: {order.deliveryTransactionId || ""}</p><p>Product Amount: {money(order.productRevenue || order.subtotal)} — Cash on Delivery</p></>
+    return <><p>Delivery Charge: {money(order.deliveryRevenue || order.deliveryCharge)} - Paid via {order.deliveryPaymentMethod || "bKash"} ({order.deliveryPaymentStatus === "Paid" ? "Paid" : "Pending"})</p><p>Delivery Transaction: {order.deliveryTransactionId || ""}</p><p>Product Amount: {money(order.productRevenue || order.subtotal)} - Cash on Delivery</p></>
   }
   if (order.paymentType === "full_online") {
     return <><p>Total Paid: {money(order.grossRevenue || order.grandTotal)} via {order.productPaymentMethod || order.paymentMethod || "bKash"}</p><p>Transaction: {order.productTransactionId || order.transactionId || ""}</p></>
@@ -22,15 +22,15 @@ const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order, shop }, ref
   const orderNumber = order.orderNumber || "SB-PREVIEW"
 
   return (
-    <div ref={ref} className="sellerbot-invoice-print mx-auto w-full max-w-3xl bg-white p-8 text-black" style={{ fontSize: 12, lineHeight: 1.45 }}>
-      <div className="border border-black">
+    <div ref={ref} className="sellerbot-invoice-print mx-auto w-full max-w-3xl p-8" style={{ fontSize: 12, lineHeight: 1.45, backgroundColor: "#ffffff", color: "#000000" }}>
+      <div className="invoice-box border border-black">
         <header className="flex items-start justify-between gap-6 border-b border-black p-5">
           <div className="flex items-start gap-4">
             <div>
               <h1 className="text-2xl font-bold">{shop?.shopName || "SELLERBOT"}</h1>
               <p>{shop?.address || ""}</p>
               <p>Phone: {shop?.phone || ""}</p>
-              <p>bKash: {shop?.bkash || ""} {shop?.nagad ? `Nagad: ${shop.nagad}` : ""}</p>
+              <p>bKash: {shop?.bkash || ""} {shop?.nagad ? "Nagad: " + shop.nagad : ""}</p>
             </div>
           </div>
           <div className="text-right">
@@ -60,9 +60,9 @@ const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order, shop }, ref
           </thead>
           <tbody>
             {(order.products || []).map((item, index) => (
-              <tr key={`${item.productId}-${index}`} className="border-b border-gray-300 last:border-b-0">
+              <tr key={(item.productId || item.productName || "product") + "-" + index} className="border-b border-gray-300 last:border-b-0">
                 <td className="p-3">{index + 1}</td>
-                <td className="p-3">{item.productName}</td>
+                <td className="p-3">{item.productCode ? "[" + item.productCode + "] " : ""}{item.productName}</td>
                 <td className="p-3">{item.quantity}</td>
                 <td className="p-3">{money(item.unitPrice)}</td>
                 <td className="p-3 text-right">{money(item.totalPrice)}</td>
@@ -94,6 +94,3 @@ const InvoiceTemplate = forwardRef(function InvoiceTemplate({ order, shop }, ref
 })
 
 export default InvoiceTemplate
-
-
-
